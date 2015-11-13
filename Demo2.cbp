@@ -30,15 +30,32 @@
 		</Build>
 		<Compiler>
 			<Add option="-Wall" />
+			<Add option="-std=c99" />
 			<Add directory="../sdl/include" />
 		</Compiler>
 		<Linker>
+			<Add option="-luser32" />
 			<Add option="-lmingw32 -lSDL2main -lSDL2" />
+			<Add option="-lopengl32 -lglu32 -lgdi32" />
+			<Add library="user32" />
 			<Add directory="../sdl/i686-w64-mingw32/lib" />
 		</Linker>
+		<Unit filename="glElements.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="glElements.h" />
 		<Unit filename="main.c">
 			<Option compilerVar="CC" />
 		</Unit>
+		<Unit filename="parameters.h" />
+		<Unit filename="scenes/1.txt" />
+		<Unit filename="shaders/fragment shader" />
+		<Unit filename="shaders/geometry shader" />
+		<Unit filename="shaders/vertex shader" />
+		<Unit filename="types.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="types.h" />
 		<Extensions>
 			<code_completion />
 			<envvars />

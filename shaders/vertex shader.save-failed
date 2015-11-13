@@ -1,0 +1,14 @@
+#version 330 core
+
+uniform mat4 projectionMatrix;
+
+in vec3 position;
+in vec3 color;
+
+out vec4 gColor;
+
+void main(void)
+{
+    gl_Position = projectionMatrix * vec4(position + vec3(0, 0, 2), 1.0);
+    gColor = vec4(pow(color, vec3(1.0 / 2.2)), 0);
+}

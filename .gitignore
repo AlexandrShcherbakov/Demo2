@@ -42,5 +42,16 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
-bin/*
-obj/*
+bin/
+obj/
+cmakeOut/
+bin\
+obj\
+cmakeOut\
+bin/Debug/Demo2.exe
+*.o
+main
+*.exe
+*.o
+*.exe
+*.o
