@@ -49,9 +49,9 @@
 		</Unit>
 		<Unit filename="parameters.h" />
 		<Unit filename="scenes/1.txt" />
-		<Unit filename="shaders/fragment shader" />
-		<Unit filename="shaders/geometry shader" />
-		<Unit filename="shaders/vertex shader" />
+		<Unit filename="shaders/fragment.frag" />
+		<Unit filename="shaders/geometry.geom" />
+		<Unit filename="shaders/vertex.vert" />
 		<Unit filename="types.c">
 			<Option compilerVar="CC" />
 		</Unit>

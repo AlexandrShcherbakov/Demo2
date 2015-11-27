@@ -1,20 +1,27 @@
 #include "types.h"
 ///File with realization of basic operations for types discribed in types.h
 
-float3 f3(float x, float y, float z) {
-    float3 result = {x, y, z};
+vec3 v3(float x, float y, float z) {
+    vec3 result = {x, y, z};
     return result;
 }
 
 
-polygon crtPolygon(int vertCount, float * vertData, float3 norm) {
+vec4 v4(float x, float y, float z, float w) {
+    vec4 result = {x, y, z, w};
+    return result;
+}
+
+
+polygon crtPolygon(int vertCount, float * vertData, vec3 norm, Material mat) {
     polygon result;
     result.length = vertCount;
     result.vertices = calloc(vertCount, sizeof(*result.vertices));
     for (int i = 0; i < vertCount; ++i) {
-        result.vertices[i] = f3(vertData[3 * i], vertData[3 * i + 1], vertData[3 * i + 2]);
+        result.vertices[i] = v3(vertData[3 * i], vertData[3 * i + 1], vertData[3 * i + 2]);
     }
     result.normal = norm;
+    result.mat = mat;
     return result;
 }
 
@@ -31,24 +38,37 @@ polygon readPolygon(FILE *fl) {
     fscanf(fl, "%f", &(result.normal.x));
     fscanf(fl, "%f", &(result.normal.y));
     fscanf(fl, "%f", &(result.normal.z));
+    fscanf(fl, "%f", &(result.mat.ambient.x));
+    fscanf(fl, "%f", &(result.mat.ambient.y));
+    fscanf(fl, "%f", &(result.mat.ambient.z));
+    fscanf(fl, "%f", &(result.mat.ambient.w));
+    fscanf(fl, "%f", &(result.mat.diffuse.x));
+    fscanf(fl, "%f", &(result.mat.diffuse.y));
+    fscanf(fl, "%f", &(result.mat.diffuse.z));
+    fscanf(fl, "%f", &(result.mat.diffuse.w));
+    fscanf(fl, "%f", &(result.mat.specular.x));
+    fscanf(fl, "%f", &(result.mat.specular.y));
+    fscanf(fl, "%f", &(result.mat.specular.z));
+    fscanf(fl, "%f", &(result.mat.specular.w));
+    fscanf(fl, "%f", &(result.mat.shininess));
     return result;
 }
 
 
-inline float3 sub(float3 p1, float3 p2) {
-    float3 res = {p1.x - p2.x, p1.y - p2.y, p1.z - p2.z};
+inline vec3 sub(vec3 p1, vec3 p2) {
+    vec3 res = {p1.x - p2.x, p1.y - p2.y, p1.z - p2.z};
     return res;
 }
 
 
-inline float3 mult(float3 p, float k) {
-    float3 res = {p.x * k, p.y * k, p.z * k};
+inline vec3 mult(vec3 p, float k) {
+    vec3 res = {p.x * k, p.y * k, p.z * k};
     return res;
 }
 
 
-inline float3 sum(float3 p1, float3 p2) {
-    float3 res = {p1.x + p2.x, p1.y + p2.y, p1.z + p2.z};
+inline vec3 sum(vec3 p1, vec3 p2) {
+    vec3 res = {p1.x + p2.x, p1.y + p2.y, p1.z + p2.z};
     return res;
 }
 
@@ -63,28 +83,28 @@ float square(polygon plg) {
 }
 
 
-float3 multV(float3 p1, float3 p2) {
-    float3 res = {p1.y * p2.z - p1.z * p2.y,
+vec3 multV(vec3 p1, vec3 p2) {
+    vec3 res = {p1.y * p2.z - p1.z * p2.y,
 				 p1.z * p2.x - p1.x * p2.z,
 				 p1.x * p2.y - p1.y * p2.x};
 	return res;
 }
 
 
-inline float length(float3 p) {
+inline float length(vec3 p) {
 	return sqrt(p.x * p.x + p.y * p.y + p.z * p.z);
 }
 
 //Unused!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-float3 normal(polygon p) {
-	float3 res = multV(sub(p.vertices[1], p.vertices[0]),
+vec3 normal(polygon p) {
+	vec3 res = multV(sub(p.vertices[1], p.vertices[0]),
 					sub(p.vertices[2], p.vertices[0]));
     return mult(res, 1.0 / length(res));
 }
 
 
-float3 center(patch p) {
-    float3 c = {0, 0, 0};
+vec3 center(patch p) {
+    vec3 c = {0, 0, 0};
     for (int i = 0; i < p.length; ++i) {
         c = sum(c, p.vertices[i]);
     }
@@ -92,20 +112,20 @@ float3 center(patch p) {
 }
 
 
-float3 randomPointInSquare(polygon p) {
-    float3 p1 = sub(p.vertices[1], p.vertices[0]);
-    float3 p2 = sub(p.vertices[3], p.vertices[0]);
+vec3 randomPointInSquare(polygon p) {
+    vec3 p1 = sub(p.vertices[1], p.vertices[0]);
+    vec3 p2 = sub(p.vertices[3], p.vertices[0]);
     float l1 = (float)rand() / RAND_MAX;
     float l2 = (float)rand() / RAND_MAX;
     return sum(p.vertices[0], sum(mult(p1, l1), mult(p2, l2)));
 }
 
-float3 polarizePointInPolygon(polygon pl, float3 pnt) {
-    float3 c = center(pl);
+vec3 polarizePointInPolygon(polygon pl, vec3 pnt) {
+    vec3 c = center(pl);
     return sum(c, sub(c, pnt));
 }
 
-float3 randomPoint(patch p) {
+vec3 randomPoint(patch p) {
     float * weightes = calloc(p.length, sizeof(*weightes));
     float s = 0;
     for (int i = 0; i < p.length; ++i) {
@@ -115,8 +135,8 @@ float3 randomPoint(patch p) {
     for (int i = 0; i < p.length; ++i) {
         weightes[i] /= s;
     }
-    float3 c = center(p);
-    float3 res = c;
+    vec3 c = center(p);
+    vec3 res = c;
     for (int i = 0; i < p.length; ++i) {
         res = sum(res, mult(sub(p.vertices[i], c), weightes[i]));
     }
@@ -125,17 +145,17 @@ float3 randomPoint(patch p) {
 }
 
 
-float multS(float3 p1, float3 p2) {
+float multS(vec3 p1, vec3 p2) {
     return p1.x * p2.x + p1.y * p2.y + p1.z * p2.z;
 }
 
 
-float cosV(float3 p1, float3 p2) {
+float cosV(vec3 p1, vec3 p2) {
 	return multS(p1, p2) / length(p1) / length(p2);
 }
 
 
-int inPolygon(polygon pl, float3 p) {
+int inPolygon(polygon pl, vec3 p) {
 	float sq = 0;
 	for (int i = 1; i <= pl.length; ++i) {
         sq += length(multV(sub(pl.vertices[i % pl.length], p),
@@ -145,14 +165,14 @@ int inPolygon(polygon pl, float3 p) {
 }
 
 
-float distance(polygon pl, float3 p) {
+float distance(polygon pl, vec3 p) {
     float d = -multS(pl.normal, pl.vertices[0]);
     return multS(pl.normal, p) + d;
 }
 
 
-int checkIntersection(polygon pl, float3 p1, float3 p2) {
-    float3 aug = sub(p2, p1);
+int checkIntersection(polygon pl, vec3 p1, vec3 p2) {
+    vec3 aug = sub(p2, p1);
     float d = -multS(pl.normal, pl.vertices[0]);
     float t = multS(pl.normal, aug);
     if (fabs(t) < DBL_EPSILON) return 0;

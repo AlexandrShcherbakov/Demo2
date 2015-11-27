@@ -8,20 +8,57 @@
 
 ///Types discription
 
+typedef unsigned uint;
+
 ///Type for representation of point in 3D space
-    typedef struct float3 {
+    typedef struct vec3 {
         float x, y, z;
-    } float3;
+    } vec3;
+
+///Type for representation of point in 4D space
+    typedef struct vec4 {
+        float x, y, z, w;
+    } vec4;
+
+///Type for material
+    typedef struct Material {
+        vec4 ambient;
+        vec4 diffuse;
+        vec4 specular;
+        float shininess;
+    } Material;
+
 
 ///Type for representation of polygon in 3D space
     typedef struct polygon {
-        float3 * vertices;
-        float3 normal;
+        vec3 * vertices;
+        vec3 normal;
         int length;
+        Material mat;
     } polygon;
 
 ///Type for representation of patch in polygon
     typedef polygon patch;
+
+///Type for spotlight source
+    typedef struct LightSource {
+        vec4 ambient;
+        vec4 diffuse;
+        vec4 specular;
+        vec3 spotDirection;
+        float spotCosCutoff;
+    } LightSource;
+
+
+///Type for spotlight source
+    typedef struct SpotLight {
+        vec4 position;
+        vec3 intensities;
+        float attenuation;
+        float ambientCoefficient;
+        float coneAngle;
+        vec3 coneDirection;
+    } SpotLight;
 
 //////////////////////////////////////////////////////////
 
@@ -29,33 +66,37 @@
 
 ///float3
 ///Constructor
-    float3 f3(float x, float y, float z);
+    vec3 v3(float x, float y, float z);
 
 ///Substraction for two points
-    float3 sub(float3 p1, float3 p2);
+    vec3 sub(vec3 p1, vec3 p2);
 
 ///Multiply point to number
-    float3 mult(float3 p, float k);
+    vec3 mult(vec3 p, float k);
 
 ///Sum for two points
-    float3 sum(float3 p1, float3 p2);
+    vec3 sum(vec3 p1, vec3 p2);
 
 ///Vector multiplication for two vectors
-    float3 multV(float3 p1, float3 p2);
+    vec3 multV(vec3 p1, vec3 p2);
 
 ///Length of vector
-    float length(float3 p);
+    float length(vec3 p);
 
 ///Scalar multiplication for two vectors
-    float multS(float3 p1, float3 p2);
+    float multS(vec3 p1, vec3 p2);
 
 ///Cosinus for angle between two vectors
-    float cosV(float3 p1, float3 p2);
+    float cosV(vec3 p1, vec3 p2);
+
+///float4
+///Constructor
+    vec4 v4(float x, float y, float z, float w);
 
 
 ///polygon
 ///Constructor
-    polygon crtPolygon(int vertCount, float * vertData, float3 norm);
+    polygon crtPolygon(int vertCount, float * vertData, vec3 norm, Material mat);
 
 ///Read from file
     polygon readPolygon(FILE *fl);
@@ -64,30 +105,30 @@
     float square(polygon plg);
 
 ///Normal vector for polygon
-    float3 normal(polygon p);
+    vec3 normal(polygon p);
 
 ///Random point in square
-    float3 randomPointInSquare(polygon p);
+    vec3 randomPointInSquare(polygon p);
 
 ///Reflect point at center of polygon
-    float3 polarizePointInPolygon(polygon pl, float3 pnt);
+    vec3 polarizePointInPolygon(polygon pl, vec3 pnt);
 
 ///Check if point in polygon
-    int inPolygon(polygon pl, float3 p);
+    int inPolygon(polygon pl, vec3 p);
 
 ///Comparator for polygons
     int compar (const void* p1, const void* p2);
 
 ///Distance between point and area
-    float distance(polygon pl, float3 p);
+    float distance(polygon pl, vec3 p);
 
 ///Check if ray has mutual point with polygon
-    int checkIntersection(polygon pl, float3 p1, float3 p2);
+    int checkIntersection(polygon pl, vec3 p1, vec3 p2);
 
 ///Center of weightes
-	float3 center(patch p);
+	vec3 center(patch p);
 
 ///Random point in polygon
-	float3 randomPoint(patch p);
+	vec3 randomPoint(patch p);
 
 #endif

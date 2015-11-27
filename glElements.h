@@ -4,6 +4,7 @@
 #include <stdio.h>
 
 #include "SDL.h"
+#include "types.h"
 #include <GL/gl.h>
 #include <GL/glu.h>
 
@@ -33,17 +34,19 @@ GLuint meshVAO;
 float * extGLBufVertices;
 
 //For colors
-float * extGLBufColors;
+float * extGLBufAmbCol;
+float * extGLBufDifCol;
+float * extGLBufSpcCol;
+
+//For normals
+char * extGLBufNormInds;
 
 //Internal buffers
 //For verticies
 GLuint intGlBufVerticies;
 
-//For colors
-GLuint intGLBufColors;
-
 //For normals
-GLuint intGLBufNormals;
+GLuint intGLBufNormInds;
 
 //Debug defines
 //////////////////////////////////////////////////////
@@ -78,8 +81,26 @@ int loadSource(char * shaderName, char **textOut, int *textLen);
 //Fill perspective matrix
 void Matrix4Perspective(float *M, float fovy, float aspect, float znear, float zfar);
 
+//Fill shift matrix
+void Matrix4Shift(float *M, vec3 shift);
+
+//Fill rotate matrix
+void Matrix4Rotate(float *M, vec3 a);
+
 //Compilation of shader
 void CompileShader(const char * name, GLuint * shader, GLenum shaderType);
+
+//Pass uniform to shader
+void SetUniform4f(GLuint prog, const char * name, vec4 v);
+void SetUniform3f(GLuint prog, const char * name, vec3 v);
+void SetUniform1f(GLuint prog, const char * name, float v);
+
+void SetUniform3fv(GLuint prog, const char * name, int count, float * v);
+
+void SetUniformMat4f(GLuint prog, const char * name, float * v);
+
+void SetUniform1fInd(GLuint prog, const char * name, int ind, float v);
+void SetUniform4fInd(GLuint prog, const char * name, int ind, vec4 v);
 
 //Load GL functions
 ///////////////////////////////////////////////////////
@@ -88,10 +109,12 @@ void CompileShader(const char * name, GLuint * shader, GLenum shaderType);
 #define OPENGL_GET_PROC(p,n) \
 	n = (p)SDL_GL_GetProcAddress(#n); \
 	if (NULL == n) { \
-			fprintf(stderr, "Loading extension '%s' fail (%d)\n", #n, GetLastError()); \
+			fprintf(stderr, "Loading extension '%s' fail\n", #n); \
 			fprintf(stderr, "%s", SDL_GetError()); \
 			return 0; \
 	}
+
+//fprintf(stderr, "Loading extension '%s' fail (%d)\n", #n, GetLastError()); \
 
 //Functions types definition
 typedef void   (APIENTRY * glGetShaderiv_FUNC)             (GLuint, GLenum, GLint *);
@@ -114,7 +137,11 @@ typedef GLint  (APIENTRY * glGetUniformLocation_FUNC)      (GLuint, const GLchar
 typedef void   (APIENTRY * glUniformMatrix4fv_FUNC)        (GLint, GLsizei, GLboolean, const GLfloat *);
 typedef GLint  (APIENTRY * glGetAttribLocation_FUNC)       (GLuint, const GLchar *);
 typedef void   (APIENTRY * glVertexAttribPointer_FUNC)     (GLuint, GLint, GLenum, GLboolean, GLsizei, const GLvoid *);
+typedef void   (APIENTRY * glVertexAttribIPointer_FUNC)    (GLuint, GLint, GLenum, GLsizei, const GLvoid *);
 typedef void   (APIENTRY * glEnableVertexAttribArray_FUNC) (GLuint);
+typedef GLint  (APIENTRY * glUniform4fv_FUNC)              (GLint, GLsizei, const GLfloat *);
+typedef GLint  (APIENTRY * glUniform3fv_FUNC)              (GLint, GLsizei, const GLfloat *);
+typedef GLint  (APIENTRY * glUniform1f_FUNC)               (GLint, GLfloat);
 
 //Functions pointers definition
 glGetShaderiv_FUNC             glGetShaderiv;
@@ -138,5 +165,9 @@ glUniformMatrix4fv_FUNC        glUniformMatrix4fv;
 glGetAttribLocation_FUNC       glGetAttribLocation;
 glVertexAttribPointer_FUNC     glVertexAttribPointer;
 glEnableVertexAttribArray_FUNC glEnableVertexAttribArray;
+glUniform4fv_FUNC              glUniform4fv;
+glUniform3fv_FUNC              glUniform3fv;
+glUniform1f_FUNC               glUniform1f;
+glVertexAttribIPointer_FUNC    glVertexAttribIPointer;
 
 #endif

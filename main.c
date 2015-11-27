@@ -4,6 +4,7 @@
 
 #include <GL/gl.h>
 #include <GL/glu.h>
+//#include "../GL/glew.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -33,6 +34,12 @@ void ReadCornellBox() {
         //Update verticies count
         verticesCount += scene[i].length;
     }
+
+    //Hardcoded direction of spotlight
+    spotLightDirection = v3(0, -1, 0);
+
+    //Hardcoded start rotate
+    rotate = v3(0, 0, 0);
 }
 
 //Add buffers and other data to OpenGL
@@ -41,25 +48,74 @@ void PrepairGLBuffers() {
     glGenVertexArrays(1, &meshVAO);                                              CHECK_GL_ERRORS
 
     //Initialization of external buffers
-    extGLBufVertices = calloc(verticesCount, 3 * sizeof(*extGLBufVertices));
-    extGLBufColors = calloc(verticesCount, 3 * sizeof(*extGLBufColors));
+    extGLBufVertices = calloc(3 * (verticesCount - 2), 3 * sizeof(*extGLBufVertices));
+    extGLBufAmbCol   = calloc(3 * (verticesCount - 2), 3 * sizeof(*extGLBufAmbCol));
+    extGLBufDifCol   = calloc(3 * (verticesCount - 2), 3 * sizeof(*extGLBufDifCol));
+    extGLBufSpcCol   = calloc(3 * (verticesCount - 2), 3 * sizeof(*extGLBufSpcCol));
+    extGLBufNormInds = calloc(3 * (verticesCount - 2), sizeof(*extGLBufNormInds));
 }
+
 
 //Add uniforms to OpenGL
 void AddGLUniforms() {
     //Projection Matrix
-    //External buffer
 	float projectionMatrix[16];
-	//Internal buffer
-	GLint projMatLoc = glGetUniformLocation(shaderProgram, "projectionMatrix");  CHECK_GL_ERRORS
 	const float aspectRatio = (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT;
 
 	//Fill matrix
 	Matrix4Perspective(projectionMatrix, 45.0f, aspectRatio, 0.5f, 5.0f);
 
-	//Send matrix to shader
-	if (projMatLoc != -1)
-		glUniformMatrix4fv(projMatLoc, 1, GL_TRUE, projectionMatrix);            CHECK_GL_ERRORS
+	//Pass matrix to shader
+	SetUniformMat4f(shaderProgram, "projectionMatrix", projectionMatrix);
+
+	//Shift matrix
+	float shiftMatrix[16];
+	//Fill shift matrix
+	Matrix4Shift(shiftMatrix, v3(0.0f, 0.0f, -1.4f));
+	//Pass shift matrix
+	SetUniformMat4f(shaderProgram, "shiftMatrix", shiftMatrix);
+
+    //Scene color
+    SetUniform4f(shaderProgram, "sceneColor", v4(0.1f, 0.1f, 0.1f, 1.0f));
+
+    //Set spotlight source
+    SetUniform4f(shaderProgram, "lg.ambient", v4(0.0f, 0.0f, 0.0f, 1.0f));
+    SetUniform4f(shaderProgram, "lg.diffuse", v4(2.0f, 2.0f, 2.0f, 1.0f));
+    SetUniform4f(shaderProgram, "lg.specular", v4(1.0f, 1.0f, 1.0f, 1.0f));
+    SetUniform3f(shaderProgram, "lg.spotPosition", v3(0.0f, 1.0f, 0.0f));
+    SetUniform3f(shaderProgram, "lg.spotDirection", spotLightDirection);
+    SetUniform1f(shaderProgram, "lg.spotCosCutoff", 0.7f);
+    SetUniform1f(shaderProgram, "lg.innerConeCos", 0.9f);
+
+    //Set array of normals
+    vec3 * normals = calloc(polygonCount, sizeof(*normals));
+    for (int i = 0; i < polygonCount; ++i) {
+        normals[i] = scene[i].normal;
+    }
+    SetUniform3fv(shaderProgram, "norm", polygonCount, normals);
+
+    //Set viewer position
+    SetUniform3f(shaderProgram, "viewer", v3(0.0f, 0.0f, 1.0f));
+
+    //Set materials
+    for(int i = 0; i < polygonCount; ++i){
+        SetUniform4fInd(shaderProgram, "maters[%d].ambient", i, scene[i].mat.ambient);
+        SetUniform4fInd(shaderProgram, "maters[%d].diffuse", i, scene[i].mat.diffuse);
+        SetUniform4fInd(shaderProgram, "maters[%d].specular", i, scene[i].mat.specular);
+        SetUniform1fInd(shaderProgram, "maters[%d].shininess", i, scene[i].mat.shininess);
+    }
+}
+
+void ChangeUniforms() {
+	//Update spot light direction
+	SetUniform3f(shaderProgram, "lg.spotDirection", spotLightDirection);
+
+	//Shift matrix
+	float rotateMatrix[16];
+	//Fill shift matrix
+	Matrix4Rotate(rotateMatrix, rotate);
+	//Pass shift matrix
+	SetUniformMat4f(shaderProgram, "rotateMatrix", rotateMatrix);
 }
 
 //Function, which creates OpenGL context, sets parameters of scene and take data to OpenGL buffers
@@ -72,22 +128,26 @@ void PrepairOpenGL(SDL_Window *window) {
 	SDL_GL_LoadLibrary(NULL);
 	loadGLFunctions();
 
+	//Information about hardware
+	printf("GPU Vendor: %s\n", glGetString(GL_VENDOR));
+	printf("GPU Name  : %s\n", glGetString(GL_RENDERER));
+	printf("GL_VER    : %s\n", glGetString(GL_VERSION));
+	printf("GLSL_VER  : %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+
     ReadCornellBox();
 
     //Shaders
     GLuint vertexShader, fragmentShader, geometryShader;
 
 	//Compile all shaders
-    CompileShader("shaders/vertex shader", &vertexShader, GL_VERTEX_SHADER);
-    CompileShader("shaders/geometry shader", &geometryShader, GL_GEOMETRY_SHADER);
-    CompileShader("shaders/fragment shader", &fragmentShader, GL_FRAGMENT_SHADER);
+    CompileShader("shaders/vertex.vert", &vertexShader, GL_VERTEX_SHADER);
+    CompileShader("shaders/fragment.frag", &fragmentShader, GL_FRAGMENT_SHADER);
 
 	//Initialize program
     shaderProgram  = glCreateProgram();                                          CHECK_GL_ERRORS
 
     //Attach shaders to program
     glAttachShader(shaderProgram, vertexShader);                                 CHECK_GL_ERRORS
-    glAttachShader(shaderProgram, geometryShader);                               CHECK_GL_ERRORS
     glAttachShader(shaderProgram, fragmentShader);                               CHECK_GL_ERRORS
 
     glLinkProgram(shaderProgram);                                                CHECK_GL_ERRORS
@@ -106,37 +166,40 @@ void PrepairOpenGL(SDL_Window *window) {
     AddGLUniforms();
 }
 
+
 void PassCornellBoxDataToGL() {
     //Set vertices and normals to external gl buffers
     for (int i = 0, vertIter = 0; i < polygonCount; ++i) {
-        for (int j = 0; j < scene[i].length; ++j) {
-            //Add vertex
-            extGLBufVertices[3 * (vertIter + j) + 0] = scene[i].vertices[j].x;
-            extGLBufVertices[3 * (vertIter + j) + 1] = scene[i].vertices[j].y;
-            extGLBufVertices[3 * (vertIter + j) + 2] = scene[i].vertices[j].z;
+        for (int j = 1, vertShift = 0; j < scene[i].length - 1; ++j) {
+            //Add first vertex
+            extGLBufVertices[3 * (vertIter + vertShift) + 0] = scene[i].vertices[0].x;
+            extGLBufVertices[3 * (vertIter + vertShift) + 1] = scene[i].vertices[0].y;
+            extGLBufVertices[3 * (vertIter + vertShift) + 2] = scene[i].vertices[0].z;
+            //Add index of normal
+            extGLBufNormInds[vertIter + vertShift] = i;
+            vertShift++;
+            //Add second vertex
+            extGLBufVertices[3 * (vertIter + vertShift) + 0] = scene[i].vertices[j].x;
+            extGLBufVertices[3 * (vertIter + vertShift) + 1] = scene[i].vertices[j].y;
+            extGLBufVertices[3 * (vertIter + vertShift) + 2] = scene[i].vertices[j].z;
+            //Add index of normal
+            extGLBufNormInds[vertIter + vertShift] = i;
+            vertShift++;
+            //Add third vertex
+            extGLBufVertices[3 * (vertIter + vertShift) + 0] = scene[i].vertices[j + 1].x;
+            extGLBufVertices[3 * (vertIter + vertShift) + 1] = scene[i].vertices[j + 1].y;
+            extGLBufVertices[3 * (vertIter + vertShift) + 2] = scene[i].vertices[j + 1].z;
+            //Add index of normal
+            extGLBufNormInds[vertIter + vertShift] = i;
+            vertShift++;
         }
-        vertIter += scene[i].length;
-    }
-    //Set colors to external gl buffer
-    //Set all walls to white
-    for (int i = 0; i < 3 * verticesCount; ++i) {
-        extGLBufColors[i] = 1.0f;
-    }
-    //Set left wall to red
-    for (int i = scene[0].length; i < scene[0].length + scene[1].length; ++i) {
-        extGLBufColors[3 * i + 1] = 0;
-        extGLBufColors[3 * i + 2] = 0;
-    }
-    //Set right wall to green
-    for (int i = scene[1].length + scene[0].length; i < scene[0].length + scene[1].length + scene[2].length; ++i) {
-        extGLBufColors[3 * i + 0] = 0;
-        extGLBufColors[3 * i + 2] = 0;
+        vertIter += 3 * (scene[i].length - 2);
     }
 
     //Locations for buffers
-    GLint verticesLocation, colorsLocation, normalsLocation;
+    GLint verticesLocation, normalsLocation;
 
-    int bufferSize = 3 * sizeof(*extGLBufVertices) * verticesCount;
+    int bufferSize = 3 * sizeof(*extGLBufVertices) * 3 * (verticesCount - 2);
 
     glBindVertexArray(meshVAO);                                                  CHECK_GL_ERRORS
 
@@ -144,33 +207,67 @@ void PassCornellBoxDataToGL() {
     glGenBuffers(1, &intGlBufVerticies);                                         CHECK_GL_ERRORS
     glBindBuffer(GL_ARRAY_BUFFER, intGlBufVerticies);                            CHECK_GL_ERRORS
 	glBufferData(GL_ARRAY_BUFFER, bufferSize, extGLBufVertices, GL_STATIC_DRAW); CHECK_GL_ERRORS
-    verticesLocation = glGetAttribLocation(shaderProgram, "position");           CHECK_GL_ERRORS
-    glVertexAttribPointer(verticesLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);        CHECK_GL_ERRORS
-    glEnableVertexAttribArray(verticesLocation);                                 CHECK_GL_ERRORS
+	verticesLocation = glGetAttribLocation(shaderProgram, "position");           CHECK_GL_ERRORS
+	if (verticesCount != -1) {
+		glVertexAttribPointer(verticesLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);    CHECK_GL_ERRORS
+		glEnableVertexAttribArray(verticesLocation);                             CHECK_GL_ERRORS
+	} else {
+        fprintf(stderr, "Loaction position not found\n");
+	}
     glBindBuffer(GL_ARRAY_BUFFER, 0);                                            CHECK_GL_ERRORS
 
-    //Pass colors to shader
-    glGenBuffers(1, &intGLBufColors);                                            CHECK_GL_ERRORS
-    glBindBuffer(GL_ARRAY_BUFFER, intGLBufColors);                               CHECK_GL_ERRORS
-	glBufferData(GL_ARRAY_BUFFER, bufferSize, extGLBufColors, GL_STATIC_DRAW);   CHECK_GL_ERRORS
-    colorsLocation = glGetAttribLocation(shaderProgram, "color");                CHECK_GL_ERRORS
-    glVertexAttribPointer(colorsLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);          CHECK_GL_ERRORS
-    glEnableVertexAttribArray(colorsLocation);                                   CHECK_GL_ERRORS
+    //Pass normals to shader
+    glGenBuffers(1, &intGLBufNormInds);                                          CHECK_GL_ERRORS
+    glBindBuffer(GL_ARRAY_BUFFER, intGLBufNormInds);                             CHECK_GL_ERRORS
+	glBufferData(GL_ARRAY_BUFFER,
+              3 * (verticesCount - 2) * sizeof(*extGLBufNormInds),
+              extGLBufNormInds, GL_STATIC_DRAW);                                 CHECK_GL_ERRORS
+	normalsLocation = glGetAttribLocation(shaderProgram, "v_polInd");            CHECK_GL_ERRORS
+    if (normalsLocation != -1) {
+		glVertexAttribIPointer(normalsLocation, 1, GL_UNSIGNED_BYTE, 0, 0);      CHECK_GL_ERRORS
+		glEnableVertexAttribArray(normalsLocation);                              CHECK_GL_ERRORS
+    } else {
+        fprintf(stderr, "Location v_polInd not found\n");
+    }
     glBindBuffer(GL_ARRAY_BUFFER, 0);                                            CHECK_GL_ERRORS
 
     glBindVertexArray(0);                                                        CHECK_GL_ERRORS
 }
 
+
 void DrawCornellBox(SDL_Window * window) {
+    //Update uniforms
+    ChangeUniforms();
     //Clear buffers
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);                          CHECK_GL_ERRORS
 
 	//Use buffers
 	glBindVertexArray(meshVAO);                                                  CHECK_GL_ERRORS
 
-    glDrawArrays(GL_LINES_ADJACENCY, 0, verticesCount);                          CHECK_GL_ERRORS
+    glDrawArrays(GL_TRIANGLES, 0, 3 * (verticesCount - 2));                      CHECK_GL_ERRORS
     SDL_GL_SwapWindow(window);                                                   CHECK_GL_ERRORS
     glBindVertexArray(0);                                                        CHECK_GL_ERRORS
+}
+
+
+void HandleKeyDown(SDL_Keycode code) {
+    if (code == SDLK_UP) {
+        spotLightDirection.z -= 0.1;
+    } else if (code == SDLK_DOWN) {
+    	spotLightDirection.z += 0.1;
+    } else if (code == SDLK_LEFT) {
+    	spotLightDirection.x -= 0.1;
+    } else if (code == SDLK_RIGHT) {
+    	spotLightDirection.x += 0.1;
+    } else if (code == SDLK_d) {
+        rotate.y -= 0.1;
+    } else if (code == SDLK_a) {
+        rotate.y += 0.1;
+    } else if (code == SDLK_w) {
+        rotate.x += 0.1;
+    } else if (code == SDLK_s) {
+        rotate.x -= 0.1;
+    }
 }
 
 
@@ -219,9 +316,12 @@ int main(int argc, char* argv[]) {
         while( SDL_PollEvent( &e ) != 0 ) {
             if( e.type == SDL_QUIT ) { //Check if user close window
                 quit = true;
+            } else if (e.type == SDL_KEYDOWN) {
+            	HandleKeyDown(e.key.keysym.sym);
             }
         }
         DrawCornellBox(window);
+        //break;
     }
 
     //Destroy window and release resources
