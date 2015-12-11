@@ -182,3 +182,7 @@ int checkIntersection(polygon pl, vec3 p1, vec3 p2) {
     }
     return inPolygon(pl, sum(p1, mult(aug, t)));
 }
+
+vec3 normalize(vec3 v) {
+    return mult(v, 1 / length(v));
+}

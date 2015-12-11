@@ -2,9 +2,9 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+//#include "../GL/glew.h"
 #include <GL/gl.h>
 #include <GL/glu.h>
-//#include "../GL/glew.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -36,10 +36,29 @@ void ReadCornellBox() {
     }
 
     //Hardcoded direction of spotlight
-    spotLightDirection = v3(0, -1, 0);
+    spotLightDirection = v3(0, -1.0f, 0);
 
     //Hardcoded start rotate
     rotate = v3(0, 0, 0);
+
+    //Hardcoded position of spotlight
+    spotLightPosition = v3(0.0f, 1.0f, 0.0f);
+
+    //Hardcoded view point
+    viewPoint = v3(0.0f, 0.0f, 1.4f);
+
+    //Hardcoded view direction
+    viewDirection = v3(0.0f, 0.0f, -1.0f);
+
+    //Standart view angle
+    viewAngle = 45.0f;
+
+    //Spot light parameters
+    spotAngIn = 25.0f;
+    spotAngOut = 45.0f;
+
+    //Need to create shadow map
+    actualShadowMap = false;
 }
 
 //Add buffers and other data to OpenGL
@@ -56,36 +75,44 @@ void PrepairGLBuffers() {
 }
 
 
+void PrepairShadowMap() {
+    //Free old resources
+    glDeleteFramebuffers(1, &fbo);                                               CHECK_GL_ERRORS
+    glDeleteTextures(1, &shadowMap);                                             CHECK_GL_ERRORS
+
+	glUseProgram(shaderProgram);                                                 CHECK_GL_ERRORS
+	//Create framebuffer
+    glGenFramebuffers(1, &fbo);                                                  CHECK_GL_ERRORS
+    //Create shadow map
+    glGenTextures(1, &shadowMap);                                                CHECK_GL_ERRORS
+    //Create texture for shadow map
+    glBindTexture(GL_TEXTURE_2D, shadowMap);                                     CHECK_GL_ERRORS
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOWMAP_EDGE,
+				SHADOWMAP_EDGE, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);           CHECK_GL_ERRORS
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);            CHECK_GL_ERRORS
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);            CHECK_GL_ERRORS
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);         CHECK_GL_ERRORS
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);         CHECK_GL_ERRORS
+	//Bind shadowmap to framebuffer
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);                                 CHECK_GL_ERRORS
+	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+							GL_TEXTURE_2D, shadowMap, 0);                        CHECK_GL_ERRORS
+}
+
+
 //Add uniforms to OpenGL
 void AddGLUniforms() {
-    //Projection Matrix
-	float projectionMatrix[16];
-	const float aspectRatio = (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT;
-
-	//Fill matrix
-	Matrix4Perspective(projectionMatrix, 45.0f, aspectRatio, 0.5f, 5.0f);
-
-	//Pass matrix to shader
-	SetUniformMat4f(shaderProgram, "projectionMatrix", projectionMatrix);
-
-	//Shift matrix
-	float shiftMatrix[16];
-	//Fill shift matrix
-	Matrix4Shift(shiftMatrix, v3(0.0f, 0.0f, -1.4f));
-	//Pass shift matrix
-	SetUniformMat4f(shaderProgram, "shiftMatrix", shiftMatrix);
-
     //Scene color
-    SetUniform4f(shaderProgram, "sceneColor", v4(0.1f, 0.1f, 0.1f, 1.0f));
+    SetUniform4f(shaderProgram, "sceneColor", v4(0.5f, 0.5f, 0.5f, 1.0f));
 
     //Set spotlight source
     SetUniform4f(shaderProgram, "lg.ambient", v4(0.0f, 0.0f, 0.0f, 1.0f));
     SetUniform4f(shaderProgram, "lg.diffuse", v4(2.0f, 2.0f, 2.0f, 1.0f));
     SetUniform4f(shaderProgram, "lg.specular", v4(1.0f, 1.0f, 1.0f, 1.0f));
-    SetUniform3f(shaderProgram, "lg.spotPosition", v3(0.0f, 1.0f, 0.0f));
+    SetUniform3f(shaderProgram, "lg.spotPosition", spotLightPosition);
     SetUniform3f(shaderProgram, "lg.spotDirection", spotLightDirection);
-    SetUniform1f(shaderProgram, "lg.spotCosCutoff", 0.7f);
-    SetUniform1f(shaderProgram, "lg.innerConeCos", 0.9f);
+    SetUniform1f(shaderProgram, "lg.spotCosCutoff", cos(spotAngOut));
+    SetUniform1f(shaderProgram, "lg.innerConeCos", cos(spotAngIn));
 
     //Set array of normals
     vec3 * normals = calloc(polygonCount, sizeof(*normals));
@@ -93,9 +120,6 @@ void AddGLUniforms() {
         normals[i] = scene[i].normal;
     }
     SetUniform3fv(shaderProgram, "norm", polygonCount, normals);
-
-    //Set viewer position
-    SetUniform3f(shaderProgram, "viewer", v3(0.0f, 0.0f, 1.0f));
 
     //Set materials
     for(int i = 0; i < polygonCount; ++i){
@@ -106,16 +130,74 @@ void AddGLUniforms() {
     }
 }
 
+void SetUniformsForShadowMap() {
+	glUseProgram(shaderProgram);
+	//Projection Matrix
+	float projectionMatrix[16];
+	const float aspectRatio = (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT;
+	//Fill matrix
+	Matrix4Perspective(projectionMatrix, spotAngOut * 3, 1, 0.05f, 5.0f);
+
+	//Shift matrix
+	float shiftMatrix[16];
+	//Fill shift matrix
+	Matrix4Shift(shiftMatrix, mult(spotLightPosition, -1));
+
+	//Rotate matrix
+	float rotateMatrix[16];
+	//Fill rotate matrix
+	Matrix4Rotate(rotateMatrix, CamViewerRotation);
+
+	MultMatrix4(projectionMatrix, rotateMatrix, lightMatrix);
+    MultMatrix4(lightMatrix, shiftMatrix, lightMatrix);
+
+    SetUniformMat4f(shaderProgram, "camMatrix", lightMatrix);
+    SetUniformMat4f(shaderProgram, "lightMatrix", lightMatrix);
+
+    //Set viewer position
+    SetUniform3f(shaderProgram, "viewer", spotLightPosition);
+
+    SetUniform3f(shaderProgram, "lg.spotPosition", spotLightPosition);
+    SetUniform3f(shaderProgram, "lg.spotDirection", spotLightDirection);
+    glUseProgram(0);
+}
+
+void SetStandartCamera() {
+	glUseProgram(shaderProgram);
+	//Projection Matrix
+	float projectionMatrix[16];
+	const float aspectRatio = (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT;
+	//Fill matrix
+	Matrix4Perspective(projectionMatrix, viewAngle, aspectRatio, 0.5f, 5.0f);
+
+	//Shift matrix
+	float shiftMatrix[16];
+	//Fill shift matrix
+	Matrix4Shift(shiftMatrix, mult(viewPoint, -1));
+
+	//Rotate matrix
+	float rotateMatrix[16];
+	//Fill rotate matrix
+	Matrix4Rotate(rotateMatrix, rotate);
+
+	MultMatrix4(projectionMatrix, rotateMatrix, objectMatrix);
+    MultMatrix4(objectMatrix, shiftMatrix, objectMatrix);
+
+    SetUniformMat4f(shaderProgram, "camMatrix", objectMatrix);
+    SetUniformMat4f(shaderProgram, "lightMatrix", lightMatrix);
+
+	//Set viewer position
+    SetUniform3f(shaderProgram, "viewer", viewPoint);
+    glUseProgram(0);
+}
+
 void ChangeUniforms() {
+	glUseProgram(shaderProgram);
 	//Update spot light direction
 	SetUniform3f(shaderProgram, "lg.spotDirection", spotLightDirection);
 
-	//Shift matrix
-	float rotateMatrix[16];
-	//Fill shift matrix
-	Matrix4Rotate(rotateMatrix, rotate);
-	//Pass shift matrix
-	SetUniformMat4f(shaderProgram, "rotateMatrix", rotateMatrix);
+	SetStandartCamera();
+	glUseProgram(0);
 }
 
 //Function, which creates OpenGL context, sets parameters of scene and take data to OpenGL buffers
@@ -126,7 +208,7 @@ void PrepairOpenGL(SDL_Window *window) {
 
 	//Load functions for OpenGL
 	SDL_GL_LoadLibrary(NULL);
-	loadGLFunctions();
+	LoadGLFunctions();
 
 	//Information about hardware
 	printf("GPU Vendor: %s\n", glGetString(GL_VENDOR));
@@ -160,10 +242,11 @@ void PrepairOpenGL(SDL_Window *window) {
     glUseProgram(shaderProgram);                                                 CHECK_GL_ERRORS
 
     //Enable z-buffer
-    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_DEPTH_TEST);                                                     CHECK_GL_ERRORS
 
     PrepairGLBuffers();
     AddGLUniforms();
+    PrepairShadowMap();
 }
 
 
@@ -171,6 +254,10 @@ void PassCornellBoxDataToGL() {
     //Set vertices and normals to external gl buffers
     for (int i = 0, vertIter = 0; i < polygonCount; ++i) {
         for (int j = 1, vertShift = 0; j < scene[i].length - 1; ++j) {
+            if (i == 5) {
+                vertShift += 3;
+                continue;
+            }
             //Add first vertex
             extGLBufVertices[3 * (vertIter + vertShift) + 0] = scene[i].vertices[0].x;
             extGLBufVertices[3 * (vertIter + vertShift) + 1] = scene[i].vertices[0].y;
@@ -234,15 +321,47 @@ void PassCornellBoxDataToGL() {
     glBindVertexArray(0);                                                        CHECK_GL_ERRORS
 }
 
+void PassShadowMap() {
+    glViewport(0, 0, SHADOWMAP_EDGE, SHADOWMAP_EDGE);                            CHECK_GL_ERRORS
+	glUseProgram(shaderProgram);                                                 CHECK_GL_ERRORS
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);                          CHECK_GL_ERRORS
+	glBindVertexArray(meshVAO);                                                  CHECK_GL_ERRORS
+	glDrawArrays(GL_TRIANGLES, 0, 3 * (verticesCount - 2));
+
+	GLenum Status = glCheckFramebufferStatus(GL_FRAMEBUFFER);                    CHECK_GL_ERRORS
+	if (Status != GL_FRAMEBUFFER_COMPLETE) {
+		fprintf(stderr, "FB error, status: 0x%x\n", Status);
+	}
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);                                   CHECK_GL_ERRORS
+
+    glActiveTexture(GL_TEXTURE0);                                                CHECK_GL_ERRORS
+    glBindTexture(GL_TEXTURE_2D, shadowMap);                                     CHECK_GL_ERRORS
+    SetUniform1i(shaderProgram, "shadowMap", 0);
+    glUseProgram(0);
+    glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+}
 
 void DrawCornellBox(SDL_Window * window) {
     //Update uniforms
     ChangeUniforms();
-    //Clear buffers
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);                          CHECK_GL_ERRORS
-
+	//Use shadow map
+	if (!actualShadowMap) {
+		spotLightDirection = normalize(spotLightDirection);
+		CamViewerRotation = v3(M_PI / 2, 0, 0);
+        CamViewerRotation.x += asin(normalize(spotLightDirection).z);
+        CamViewerRotation.z -= asin(normalize(spotLightDirection).x);
+        PrepairShadowMap();
+		SetUniformsForShadowMap();
+		PassShadowMap();
+		SetStandartCamera();
+		actualShadowMap = true;
+	}
+	glUseProgram(shaderProgram);                                                 CHECK_GL_ERRORS
 	//Use buffers
 	glBindVertexArray(meshVAO);                                                  CHECK_GL_ERRORS
+
+	//Clear buffers
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);                          CHECK_GL_ERRORS
 
     glDrawArrays(GL_TRIANGLES, 0, 3 * (verticesCount - 2));                      CHECK_GL_ERRORS
     SDL_GL_SwapWindow(window);                                                   CHECK_GL_ERRORS
@@ -250,24 +369,39 @@ void DrawCornellBox(SDL_Window * window) {
 }
 
 
-void HandleKeyDown(SDL_Keycode code) {
+void HandleKeyDown(SDL_Keycode code, bool *quit) {
     if (code == SDLK_UP) {
-        spotLightDirection.z -= 0.1;
+        spotLightPosition.z -= 0.01;
+        actualShadowMap = false;
     } else if (code == SDLK_DOWN) {
-    	spotLightDirection.z += 0.1;
+    	spotLightPosition.z += 0.01;
+    	actualShadowMap = false;
     } else if (code == SDLK_LEFT) {
-    	spotLightDirection.x -= 0.1;
+    	spotLightPosition.x -= 0.01;
+    	actualShadowMap = false;
     } else if (code == SDLK_RIGHT) {
-    	spotLightDirection.x += 0.1;
+    	spotLightPosition.x += 0.01;
+    	actualShadowMap = false;
     } else if (code == SDLK_d) {
-        rotate.y -= 0.1;
+        viewPoint.x += 0.1;
     } else if (code == SDLK_a) {
-        rotate.y += 0.1;
+        viewPoint.x -= 0.1;
     } else if (code == SDLK_w) {
-        rotate.x += 0.1;
+    	viewPoint.z -= 0.1;
     } else if (code == SDLK_s) {
-        rotate.x -= 0.1;
+        viewPoint.z += 0.1;
+    } else if (code == SDLK_ESCAPE) {
+        *quit = true;
     }
+}
+
+void MoveCameraByMouse(SDL_Window * window) {
+    int x, y;
+    int cX = SCREEN_WIDTH / 2, cY = SCREEN_HEIGHT / 2;
+    SDL_GetMouseState(&x, &y);
+    rotate.y += (float)(x - cX) / 100.0f;
+    rotate.x += (float)(y - cY) / 100.0f;
+    SDL_WarpMouseInWindow(window, cX, cY);
 }
 
 
@@ -309,6 +443,8 @@ int main(int argc, char* argv[]) {
 	PassCornellBoxDataToGL();
 
     SDL_GL_SetSwapInterval(1);
+    SDL_WarpMouseInWindow(window, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
+    SDL_ShowCursor(0);
 
     //Main loop
     while( !quit ) {
@@ -317,13 +453,12 @@ int main(int argc, char* argv[]) {
             if( e.type == SDL_QUIT ) { //Check if user close window
                 quit = true;
             } else if (e.type == SDL_KEYDOWN) {
-            	HandleKeyDown(e.key.keysym.sym);
+            	HandleKeyDown(e.key.keysym.sym, &quit);
             }
         }
+        MoveCameraByMouse(window);
         DrawCornellBox(window);
-        //break;
     }
-
     //Destroy window and release resources
     SDL_DestroyWindow(window);
 

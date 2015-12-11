@@ -48,6 +48,21 @@ GLuint intGlBufVerticies;
 //For normals
 GLuint intGLBufNormInds;
 
+//Shadow map
+GLuint shadowMap;
+
+//Frame buffer object
+GLuint fbo;
+
+//Matrix for object
+float objectMatrix[16];
+
+//Matrix for light
+float lightMatrix[16];
+
+//Matrix for camera
+float camMatrix[16];
+
 //Debug defines
 //////////////////////////////////////////////////////
 #define CHECK_GL_ERRORS ThrowExceptionOnGLError(__LINE__,__FILE__);
@@ -76,7 +91,7 @@ void ThrowExceptionOnGLError(int line, const char *file);
 ///////////////////////////////////////////////////////
 
 //Load shader
-int loadSource(char * shaderName, char **textOut, int *textLen);
+int LoadSource(char * shaderName, char **textOut, int *textLen);
 
 //Fill perspective matrix
 void Matrix4Perspective(float *M, float fovy, float aspect, float znear, float zfar);
@@ -101,6 +116,8 @@ void SetUniformMat4f(GLuint prog, const char * name, float * v);
 
 void SetUniform1fInd(GLuint prog, const char * name, int ind, float v);
 void SetUniform4fInd(GLuint prog, const char * name, int ind, vec4 v);
+
+void SetUniform1i(GLuint prog, const char * name, int v);
 
 //Load GL functions
 ///////////////////////////////////////////////////////
@@ -142,6 +159,13 @@ typedef void   (APIENTRY * glEnableVertexAttribArray_FUNC) (GLuint);
 typedef GLint  (APIENTRY * glUniform4fv_FUNC)              (GLint, GLsizei, const GLfloat *);
 typedef GLint  (APIENTRY * glUniform3fv_FUNC)              (GLint, GLsizei, const GLfloat *);
 typedef GLint  (APIENTRY * glUniform1f_FUNC)               (GLint, GLfloat);
+typedef GLint  (APIENTRY * glUniform1i_FUNC)               (GLint, GLint);
+typedef void   (APIENTRY * glGenFramebuffers_FUNC)         (GLsizei, GLuint *);
+typedef void   (APIENTRY * glBindFramebuffer_FUNC)         (GLenum, GLuint);
+typedef void   (APIENTRY * glFramebufferTexture2D_FUNC)    (GLenum, GLenum, GLenum, GLuint, GLint);
+typedef GLenum (APIENTRY * glCheckFramebufferStatus_FUNC)  (GLenum);
+typedef void   (APIENTRY * glActiveTexture_FUNC)           (GLenum);
+typedef void   (APIENTRY * glDeleteFramebuffers_FUNC)      (GLsizei, GLuint *);
 
 //Functions pointers definition
 glGetShaderiv_FUNC             glGetShaderiv;
@@ -168,6 +192,13 @@ glEnableVertexAttribArray_FUNC glEnableVertexAttribArray;
 glUniform4fv_FUNC              glUniform4fv;
 glUniform3fv_FUNC              glUniform3fv;
 glUniform1f_FUNC               glUniform1f;
+glUniform1i_FUNC               glUniform1i;
 glVertexAttribIPointer_FUNC    glVertexAttribIPointer;
+glGenFramebuffers_FUNC         glGenFramebuffers;
+glBindFramebuffer_FUNC         glBindFramebuffer;
+glFramebufferTexture2D_FUNC    glFramebufferTexture2D;
+glCheckFramebufferStatus_FUNC  glCheckFramebufferStatus;
+glActiveTexture_FUNC           glActiveTexture;
+glDeleteFramebuffers_FUNC      glDeleteFramebuffers;
 
 #endif

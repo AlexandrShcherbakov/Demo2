@@ -89,6 +89,9 @@ typedef unsigned uint;
 ///Cosinus for angle between two vectors
     float cosV(vec3 p1, vec3 p2);
 
+///Normalized vector
+    vec3 normalize(vec3 v);
+
 ///float4
 ///Constructor
     vec4 v4(float x, float y, float z, float w);

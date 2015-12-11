@@ -13,11 +13,12 @@ in uint v_polInd;
 out vec3 normal;
 out vec3 pos;
 out Material mat;
+out vec4 posForLight;
 
 uniform vec3 norm[50];
-uniform mat4 projectionMatrix;
-uniform mat4 shiftMatrix;
-uniform mat4 rotateMatrix;
+
+uniform mat4 camMatrix;
+uniform mat4 lightMatrix;
 uniform Material maters[50];
 
 vec4 gamma(vec4 v) {
@@ -26,11 +27,12 @@ vec4 gamma(vec4 v) {
 
 void main(void)
 {
-    gl_Position = projectionMatrix * shiftMatrix * rotateMatrix * vec4(position, 1.0);
+    gl_Position = camMatrix * vec4(position, 1.0);
     normal = norm[v_polInd];
     mat.ambient = gamma(maters[v_polInd].ambient);
     mat.diffuse = gamma(maters[v_polInd].diffuse);
     mat.specular = gamma(maters[v_polInd].specular);
     mat.shininess = maters[v_polInd].shininess;
     pos = position;
+    posForLight = lightMatrix * vec4(position, 1.0);
 }

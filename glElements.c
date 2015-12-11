@@ -81,7 +81,7 @@ void ThrowExceptionOnGLError(int line, const char *file) {
     fprintf(stderr, "!!!ERROR BUGURT\n%s", errMsg);
 }
 
-int loadSource(char * shaderName, char **textOut, int *textLen) {
+int LoadSource(char * shaderName, char **textOut, int *textLen) {
 	FILE *input;
 
 	input = fopen(shaderName, "r");
@@ -97,8 +97,8 @@ int loadSource(char * shaderName, char **textOut, int *textLen) {
 	return 1;
 }
 
-void loadGLFunctions() {
-  OPENGL_GET_PROC(glGetShaderiv_FUNC,             glGetShaderiv);
+void LoadGLFunctions() {
+    OPENGL_GET_PROC(glGetShaderiv_FUNC,             glGetShaderiv);
 	OPENGL_GET_PROC(glGetShaderInfoLog_FUNC,        glGetShaderInfoLog);
 	OPENGL_GET_PROC(glGetProgramiv_FUNC,            glGetProgramiv);
 	OPENGL_GET_PROC(glGetProgramInfoLog_FUNC,       glGetProgramInfoLog);
@@ -122,9 +122,17 @@ void loadGLFunctions() {
 	OPENGL_GET_PROC(glUniform4fv_FUNC,              glUniform4fv);
 	OPENGL_GET_PROC(glUniform3fv_FUNC,              glUniform3fv);
 	OPENGL_GET_PROC(glUniform1f_FUNC,               glUniform1f);
+	OPENGL_GET_PROC(glUniform1i_FUNC,               glUniform1i);
 	OPENGL_GET_PROC(glVertexAttribIPointer_FUNC,    glVertexAttribIPointer);
+	OPENGL_GET_PROC(glGenFramebuffers_FUNC,         glGenFramebuffers);
+	OPENGL_GET_PROC(glBindFramebuffer_FUNC,         glBindFramebuffer);
+	OPENGL_GET_PROC(glFramebufferTexture2D_FUNC,    glFramebufferTexture2D);
+	OPENGL_GET_PROC(glCheckFramebufferStatus_FUNC,  glCheckFramebufferStatus);
+	OPENGL_GET_PROC(glActiveTexture_FUNC,           glActiveTexture);
+	OPENGL_GET_PROC(glDeleteFramebuffers_FUNC,      glDeleteFramebuffers);
 }
 
+//Fill perspective matrix 4x4
 void Matrix4Perspective(float *M, float fovy, float aspect, float znear, float zfar) {
 	//Convert fovy from graduses to radians
 	float f = 1 / tanf(fovy * M_PI / 360),
@@ -137,6 +145,7 @@ void Matrix4Perspective(float *M, float fovy, float aspect, float znear, float z
 	M[12] = 0;          M[13] =  0; M[14] = -1; M[15] =  0;
 }
 
+//Fill shift matrix 4x4
 void Matrix4Shift(float *M, vec3 shift) {
 	M[ 0] = 1; M[ 1] = 0; M[ 2] = 0; M[ 3] = shift.x;
 	M[ 4] = 0; M[ 5] = 1; M[ 6] = 0; M[ 7] = shift.y;
@@ -170,6 +179,23 @@ void MultMatrix3(float *M1, float *M2, float *Mres) {
     Mres[8] = M1[6] * M2[2] + M1[7] * M2[5] + M1[8] * M2[8];
 }
 
+void MultMatrix4(float *M1, float *M2, float *Mres) {
+	float Mloc[16];
+	for (int i = 0; i < 16; ++i) {
+        Mloc[i] = 0;
+    }
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
+			for (int h = 0; h < 4; ++h) {
+                Mloc[i * 4 + j] += M1[i * 4 + h] * M2[h * 4 + j];
+			}
+        }
+    }
+    for (int i = 0; i < 16; ++i) {
+        Mres[i] = Mloc[i];
+    }
+}
+
 void Matrix4Rotate(float *M, vec3 a) {
     vec3 y = v3(0, 1, 0);
     vec3 z = v3(0, 0, 1);
@@ -197,7 +223,7 @@ void CompileShader(const char * name, GLuint * shader, GLenum shaderType) {
     int sourceLength;
 
     //Read vertex shader
-    loadSource(name, &shaderSource, &sourceLength);                              CHECK_GL_ERRORS
+    LoadSource(name, &shaderSource, &sourceLength);                              CHECK_GL_ERRORS
 
     //Compile vertex shader
     glShaderSource(*shader, 1, (const GLchar**)&shaderSource,
@@ -208,8 +234,10 @@ void CompileShader(const char * name, GLuint * shader, GLenum shaderType) {
     free(shaderSource);
 
     //Check whether the compilation is successful
-    if (ShaderStatus(*shader, GL_COMPILE_STATUS) != GL_TRUE)
+    if (ShaderStatus(*shader, GL_COMPILE_STATUS) != GL_TRUE) {
         fprintf(stderr, "BUGURT!!! Line: %d\n", __LINE__);
+        exit(1);
+    }
 }
 
 void SetUniform4f(GLuint prog, const char * name, vec4 v) {
@@ -234,6 +262,15 @@ void SetUniform1f(GLuint prog, const char * name, float v) {
     GLint location = glGetUniformLocation(prog, name);                           CHECK_GL_ERRORS
     if (location != -1) {
         glUniform1f(location, v);                                                CHECK_GL_ERRORS
+    } else {
+        fprintf(stderr, "Location: %s not found!\n", name);
+    }
+}
+
+void SetUniform1i(GLuint prog, const char * name, int v) {
+    GLint location = glGetUniformLocation(prog, name);                           CHECK_GL_ERRORS
+    if (location != -1) {
+        glUniform1i(location, v);                                                CHECK_GL_ERRORS
     } else {
         fprintf(stderr, "Location: %s not found!\n", name);
     }
