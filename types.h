@@ -37,8 +37,17 @@ typedef unsigned uint;
         Material mat;
     } polygon;
 
+
 ///Type for representation of patch in polygon
     typedef polygon patch;
+
+
+///Patched polygon
+    typedef struct patched_polygon {
+        patch * patches;
+        int axis1, axis2;
+    } patched_polygon;
+
 
 ///Type for spotlight source
     typedef struct LightSource {
@@ -103,6 +112,9 @@ typedef unsigned uint;
 
 ///Read from file
     polygon readPolygon(FILE *fl);
+
+///Create patched polygon from polygon
+    patched_polygon SplitPolygonToPatches(polygon poly, int patchCount);
 
 ///Square of polygon
     float square(polygon plg);

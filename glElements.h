@@ -25,6 +25,7 @@ enum {
 
 //Shader
 GLuint shaderProgram;
+GLuint shadowProgram;
 
 //Vertex Array Object (VAO) for buffers
 GLuint meshVAO;
@@ -48,6 +49,9 @@ GLuint intGlBufVerticies;
 //For normals
 GLuint intGLBufNormInds;
 
+//For indirect illuminate
+GLuint intGLRadiosity;
+
 //Shadow map
 GLuint shadowMap;
 
@@ -69,8 +73,10 @@ float camMatrix[16];
 
 GLenum g_OpenGLError;
 #define OPENGL_CHECK_FOR_ERRORS() \
-        if ((g_OpenGLError = glGetError()) != GL_NO_ERROR) \
-                fprintf(stderr, "OpenGL error 0x%X\n", (unsigned)g_OpenGLError);
+        if ((g_OpenGLError = glGetError()) != GL_NO_ERROR) { \
+                fprintf(stderr, "OpenGL error 0x%X\n", (unsigned)g_OpenGLError); \
+                exit(1); \
+        }
 
 
 
@@ -126,9 +132,9 @@ void SetUniform1i(GLuint prog, const char * name, int v);
 #define OPENGL_GET_PROC(p,n) \
 	n = (p)SDL_GL_GetProcAddress(#n); \
 	if (NULL == n) { \
-			fprintf(stderr, "Loading extension '%s' fail\n", #n); \
+				fprintf(stderr, "Loading extension '%s' fail\n", #n); \
 			fprintf(stderr, "%s", SDL_GetError()); \
-			return 0; \
+			exit(1); \
 	}
 
 //fprintf(stderr, "Loading extension '%s' fail (%d)\n", #n, GetLastError()); \
@@ -164,8 +170,15 @@ typedef void   (APIENTRY * glGenFramebuffers_FUNC)         (GLsizei, GLuint *);
 typedef void   (APIENTRY * glBindFramebuffer_FUNC)         (GLenum, GLuint);
 typedef void   (APIENTRY * glFramebufferTexture2D_FUNC)    (GLenum, GLenum, GLenum, GLuint, GLint);
 typedef GLenum (APIENTRY * glCheckFramebufferStatus_FUNC)  (GLenum);
-typedef void   (APIENTRY * glActiveTexture_FUNC)           (GLenum);
 typedef void   (APIENTRY * glDeleteFramebuffers_FUNC)      (GLsizei, GLuint *);
+typedef void   (APIENTRY * glGenRenderbuffers_FUNC)        (GLsizei, GLuint *);
+typedef void   (APIENTRY * glBindRenderbuffer_FUNC)        (GLenum, GLuint);
+typedef void   (APIENTRY * glRenderbufferStorage_FUNC)     (GLenum, GLenum, GLsizei, GLsizei);
+typedef void   (APIENTRY * glFramebufferRenderbuffer_FUNC) (GLenum, GLenum, GLenum, GLuint);
+
+#ifdef _WIN32
+	typedef void   (APIENTRY * glActiveTexture_FUNC)           (GLenum);
+#endif
 
 //Functions pointers definition
 glGetShaderiv_FUNC             glGetShaderiv;
@@ -198,7 +211,14 @@ glGenFramebuffers_FUNC         glGenFramebuffers;
 glBindFramebuffer_FUNC         glBindFramebuffer;
 glFramebufferTexture2D_FUNC    glFramebufferTexture2D;
 glCheckFramebufferStatus_FUNC  glCheckFramebufferStatus;
-glActiveTexture_FUNC           glActiveTexture;
 glDeleteFramebuffers_FUNC      glDeleteFramebuffers;
+glGenRenderbuffers_FUNC        glGenRenderbuffers;
+glBindRenderbuffer_FUNC        glBindRenderbuffer;
+glRenderbufferStorage_FUNC     glRenderbufferStorage;
+glFramebufferRenderbuffer_FUNC glFramebufferRenderbuffer;
+
+#ifdef _WIN32
+	glActiveTexture_FUNC           glActiveTexture;
+#endif
 
 #endif

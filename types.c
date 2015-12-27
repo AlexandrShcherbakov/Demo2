@@ -186,3 +186,53 @@ int checkIntersection(polygon pl, vec3 p1, vec3 p2) {
 vec3 normalize(vec3 v) {
     return mult(v, 1 / length(v));
 }
+
+
+patched_polygon SplitPolygonToPatches(polygon poly, int patchCount) {
+    patched_polygon pt_poly;
+    //Initialize step vectors
+    vec3 stepV[3];
+    for (int i = 1; i < 4; ++i) {
+        stepV[i - 1] = mult(sub(poly.vertices[i],
+								poly.vertices[0]), 1.0 / patchCount);
+    }
+
+    //Create matrix of polygons
+    patch * patches = calloc(patchCount * patchCount, sizeof(*patches));
+    for (int i = 0; i < patchCount; ++i) {
+        for (int j = 0; j < patchCount; ++j) {
+            int index = i * patchCount + j;
+            patches[index].vertices = calloc(4, sizeof(*patches[index].vertices));
+			patches[index].length = 4;
+			patches[index].normal = poly.normal;
+            if (i == 0) {
+                if (j == 0) {
+                    patches[index].vertices[0] = poly.vertices[0];
+                    patches[index].vertices[1] = sum(patches[index].vertices[0], stepV[0]);
+                    patches[index].vertices[2] = sum(patches[index].vertices[0], stepV[1]);
+                    patches[index].vertices[3] = sum(patches[index].vertices[0], stepV[2]);
+                } else {
+                    patches[index].vertices[0] = patches[index - 1].vertices[3];
+                    patches[index].vertices[1] = patches[index - 1].vertices[2];
+                    patches[index].vertices[2] = sum(patches[index].vertices[0], stepV[1]);
+                    patches[index].vertices[3] = sum(patches[index].vertices[0], stepV[2]);
+                }
+            } else {
+                if (j == 0) {
+                    patches[index].vertices[0] = patches[index - patchCount].vertices[1];
+                    patches[index].vertices[1] = sum(patches[index].vertices[0], stepV[0]);
+                    patches[index].vertices[2] = sum(patches[index].vertices[0], stepV[1]);
+                    patches[index].vertices[3] = patches[index - patchCount].vertices[2];
+                } else {
+                    patches[index].vertices[0] = patches[index - patchCount].vertices[1];
+                    patches[index].vertices[1] = patches[index - 1].vertices[2];
+                    patches[index].vertices[2] = sum(patches[index].vertices[0], stepV[1]);
+                    patches[index].vertices[3] = patches[index - patchCount].vertices[2];
+                }
+            }
+        }
+    }
+    pt_poly.patches = patches;
+    pt_poly.axis1 = pt_poly.axis2 = patchCount;
+    return pt_poly;
+}

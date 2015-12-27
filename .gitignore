@@ -53,8 +53,5 @@ bin/Debug/Demo2.exe
 main
 *.exe
 *.o
-*.exe
-*.o
-*.exe
-*.o
-*.o
+ff/
+Out version*

@@ -14,6 +14,9 @@
 				<Compiler>
 					<Add option="-g" />
 				</Compiler>
+				<Linker>
+					<Add library="..\clew\bin\Release\libclew.a" />
+				</Linker>
 			</Target>
 			<Target title="Release">
 				<Option output="bin/Release/Demo2" prefix_auto="1" extension_auto="1" />
@@ -21,7 +24,7 @@
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
-					<Add option="-O2" />
+					<Add option="-O3" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -29,21 +32,31 @@
 			</Target>
 		</Build>
 		<Compiler>
+			<Add option="-O3" />
 			<Add option="-Wall" />
 			<Add option="-std=c99" />
 			<Add directory="../sdl/include" />
+			<Add directory="../Radiosity/CL" />
 		</Compiler>
 		<Linker>
 			<Add option="-luser32" />
 			<Add option="-lmingw32 -lSDL2main -lSDL2" />
 			<Add option="-lopengl32 -lglu32 -lgdi32" />
+			<Add option="-fopenmp" />
 			<Add library="user32" />
+			<Add library="..\clew\bin\Debug\libclew.a" />
 			<Add directory="../sdl/i686-w64-mingw32/lib" />
+			<Add directory="../Radiosity/CL" />
 		</Linker>
+		<Unit filename="clElements.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="clElements.h" />
 		<Unit filename="glElements.c">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="glElements.h" />
+		<Unit filename="kernels/kernel" />
 		<Unit filename="main.c">
 			<Option compilerVar="CC" />
 		</Unit>
@@ -51,6 +64,8 @@
 		<Unit filename="scenes/1.txt" />
 		<Unit filename="shaders/fragment.frag" />
 		<Unit filename="shaders/geometry.geom" />
+		<Unit filename="shaders/shadowMap.frag" />
+		<Unit filename="shaders/shadowMap.vert" />
 		<Unit filename="shaders/vertex.vert" />
 		<Unit filename="types.c">
 			<Option compilerVar="CC" />

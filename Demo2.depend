@@ -1,16 +1,20 @@
 # depslib dependency file v1.0
-1449846180 source:d:\dropbox\radiosity\demo2\main.c
+1451243342 source:d:\dropbox\radiosity\demo2\main.c
 	"SDL.h"
 	<stdio.h>
 	<stdbool.h>
+	<time.h>
 	<GL/gl.h>
 	<GL/glu.h>
 	<windows.h>
 	"../GL/wglext.h"
 	"../GL/glext.h"
+	"../clew/clew.h"
+	<cl_gl.h>
 	"types.h"
 	"parameters.h"
 	"glElements.h"
+	"clElements.h"
 
 1445942958 
 
@@ -659,10 +663,10 @@
 	"begin_code.h"
 	"close_code.h"
 
-1449846280 source:d:\dropbox\radiosity\demo2\glelements.c
+1450982008 source:d:\dropbox\radiosity\demo2\glelements.c
 	"glElements.h"
 
-1449846182 d:\dropbox\radiosity\demo2\glelements.h
+1451036361 d:\dropbox\radiosity\demo2\glelements.h
 	<stdio.h>
 	"SDL.h"
 	"types.h"
@@ -685,16 +689,16 @@
 1446373459 d:\dropbox\radiosity\gl\wglext.h
 	<windows.h>
 
-1449823939 source:d:\dropbox\radiosity\demo2\types.c
+1450430255 source:d:\dropbox\radiosity\demo2\types.c
 	"types.h"
 
-1449823879 d:\dropbox\radiosity\demo2\types.h
+1450349768 d:\dropbox\radiosity\demo2\types.h
 	<stdlib.h>
 	<math.h>
 	<float.h>
 	<stdio.h>
 
-1449845464 d:\dropbox\radiosity\demo2\parameters.h
+1451225630 d:\dropbox\radiosity\demo2\parameters.h
 	"types.h"
 
 1446373458 d:\dropbox\radiosity\gl\wglew.h
@@ -727,4 +731,47 @@
 	<stdint.h>
 	<stdint.h>
 	<inttypes.h>
+
+1450643920 d:\dropbox\radiosity\clew\clew.h
+	<AvailabilityMacros.h>
+	<stdint.h>
+	<stddef.h>
+	<altivec.h>
+	<intrin.h>
+	<xmmintrin.h>
+	<intrin.h>
+	<emmintrin.h>
+	<mmintrin.h>
+	<intrin.h>
+	<immintrin.h>
+
+1450644024 d:\dropbox\radiosity\radiosity\cl\cl_gl.h
+	<OpenCL/cl.h>
+	<proxy-opencl/CL/cl.h>
+
+1444055273 d:\dropbox\radiosity\radiosity\cl\proxy-opencl\cl\cl.h
+	"clew.h"
+
+1444055198 d:\dropbox\radiosity\radiosity\cl\clew.h
+	<AvailabilityMacros.h>
+	<stdint.h>
+	<stddef.h>
+	<altivec.h>
+	<intrin.h>
+	<xmmintrin.h>
+	<intrin.h>
+	<emmintrin.h>
+	<mmintrin.h>
+	<intrin.h>
+	<immintrin.h>
+
+1451237142 source:d:\dropbox\radiosity\demo2\clelements.c
+	"clElements.h"
+
+1451233273 d:\dropbox\radiosity\demo2\clelements.h
+	<stdio.h>
+	"SDL.h"
+	"types.h"
+	"../clew/clew.h"
+	<cl_gl.h>
 

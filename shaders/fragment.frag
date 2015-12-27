@@ -21,6 +21,7 @@ in vec3 pos;
 in vec3 normal;
 in Material mat;
 in vec4 posForLight;
+in vec4 fragRadio;
 
 out vec4 finalColor;
 
@@ -29,15 +30,26 @@ uniform LightSource lg;
 uniform vec3 viewer;
 uniform sampler2D shadowMap;
 
+float DecodeShadow(vec4 f) {
+    return f.x;
+    return f.x / (1 << 16) + f.y / (1 << 8)+ f.z;
+}
+
+vec4 gamma(vec4 v) {
+    return vec4(pow(v.xyz, vec3(1.0f / 2.2f)), v.w);
+}
+
 void main(void)
 {
-    finalColor = (sceneColor * mat.ambient) + (lg.ambient * mat.ambient);
+    //finalColor = (sceneColor * mat.ambient) + (lg.ambient * mat.ambient);
+    finalColor = fragRadio;
 
     vec3 lightProj = posForLight.xyz / posForLight.w / 2 + vec3(0.5f);
+    //lightProj.z = posForLight.z / posForLight.w / 2 + 0.5;
     float shadowCoef = 0.0f;
     for (float x_off = -1.5f; x_off <= 1.5f; x_off += 1.0f) {
         for (float y_off = -1.5f; y_off <= 1.5f; y_off += 1.0f) {
-            if (texture(shadowMap, lightProj.xy + vec2(x_off, y_off) / 1024).x >= lightProj.z - 0.00001f) {
+            if (DecodeShadow(texture(shadowMap, lightProj.xy + vec2(x_off, y_off) / 1024)) >= lightProj.z - 0.00007f) {
                 shadowCoef += 1.0f;
             }
         }
@@ -63,4 +75,10 @@ void main(void)
 		}
 	}
 	if (length(lg.spotPosition - pos) < 0.01f) finalColor = vec4(1);
+	//finalColor = fragRadio;
+	finalColor = gamma(finalColor);
+	//finalColor = vec4(lightProj.z);
+	//finalColor = vec4(DecodeShadow(texture(shadowMap, gl_FragCoord.xy / vec2(800, 600))));
+	//finalColor = texture(shadowMap, gl_FragCoord.xy / vec2(800, 600));
+	//finalColor = -vec4(DecodeShadow(texture(shadowMap, lightProj.xy)) - lightProj.z) * 20;
 }

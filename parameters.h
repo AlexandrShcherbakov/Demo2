@@ -6,7 +6,9 @@
 //Scene parameters
 int polygonCount;
 polygon * scene;
+patched_polygon * pt_scene;
 int verticesCount;
+int ptVerticesCount;
 vec3 spotLightDirection;
 vec3 rotate;
 vec3 spotLightPosition;
@@ -17,12 +19,16 @@ float viewAngle;
 float spotAngIn;
 float spotAngOut;
 bool actualShadowMap;
+float *formFactors;
+int patchCount;
 
 //Program parameters
 enum {
     SCREEN_WIDTH = 800,
     SCREEN_HEIGHT = 600,
     SHADOWMAP_EDGE = 1024,
+    PATCH_COUNT = 8,
+    MONTE_KARLO_ITERATIONS_COUNT = 20,
 };
 
 #endif

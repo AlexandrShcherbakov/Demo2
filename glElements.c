@@ -98,7 +98,7 @@ int LoadSource(char * shaderName, char **textOut, int *textLen) {
 }
 
 void LoadGLFunctions() {
-    OPENGL_GET_PROC(glGetShaderiv_FUNC,             glGetShaderiv);
+  OPENGL_GET_PROC(glGetShaderiv_FUNC,             glGetShaderiv);
 	OPENGL_GET_PROC(glGetShaderInfoLog_FUNC,        glGetShaderInfoLog);
 	OPENGL_GET_PROC(glGetProgramiv_FUNC,            glGetProgramiv);
 	OPENGL_GET_PROC(glGetProgramInfoLog_FUNC,       glGetProgramInfoLog);
@@ -128,8 +128,15 @@ void LoadGLFunctions() {
 	OPENGL_GET_PROC(glBindFramebuffer_FUNC,         glBindFramebuffer);
 	OPENGL_GET_PROC(glFramebufferTexture2D_FUNC,    glFramebufferTexture2D);
 	OPENGL_GET_PROC(glCheckFramebufferStatus_FUNC,  glCheckFramebufferStatus);
-	OPENGL_GET_PROC(glActiveTexture_FUNC,           glActiveTexture);
 	OPENGL_GET_PROC(glDeleteFramebuffers_FUNC,      glDeleteFramebuffers);
+	OPENGL_GET_PROC(glGenRenderbuffers_FUNC,        glGenRenderbuffers);
+	OPENGL_GET_PROC(glBindRenderbuffer_FUNC,        glBindRenderbuffer);
+	OPENGL_GET_PROC(glRenderbufferStorage_FUNC,     glRenderbufferStorage);
+	OPENGL_GET_PROC(glFramebufferRenderbuffer_FUNC, glFramebufferRenderbuffer);
+
+  #ifdef _WIN32
+  OPENGL_GET_PROC(glActiveTexture_FUNC,           glActiveTexture);
+  #endif
 }
 
 //Fill perspective matrix 4x4
@@ -299,7 +306,7 @@ void SetUniform4fInd(GLuint prog, const char * name, int ind, vec4 v) {
     sprintf(newName, name, ind);
     GLint location = glGetUniformLocation(prog, newName);                        CHECK_GL_ERRORS
     if (location != -1) {
-        glUniform4fv(location, 1, &v);                                           CHECK_GL_ERRORS
+        glUniform4fv(location, 1, (GLfloat *)&v);                                           CHECK_GL_ERRORS
     } else {
         fprintf(stderr, "Location: %s not found!\n", newName);
     }
