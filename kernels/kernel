@@ -125,9 +125,6 @@ __kernel void SendRaysV3(__global half* excident,
 		inc += magicMult(exc, f);
     }
     vstore_half4(inc, i * get_global_size(1) + i1, preincident);
-    /*if (i == 1) {
-    printf("%d\n", i * get_global_size(1) + i1);
-    }*/
 }
 
 
@@ -146,14 +143,105 @@ __kernel void ReduceIncident(__global half* preincident, const int len) {
 
 __kernel void ReplaceIncident(__global half* preincident,
                               __global half* reflection,
-                              __global half* incident,
+                              __global half* centerIncident,
                               const int len) {
     int i = get_global_id(0);
     float4 inc = vload_half4(i * len, preincident);
     inc += vload_half4(i * len + 1, preincident);
     inc *= vload_half4(i, reflection);
-    for (int j = 0; j < 6; ++j) {
+    vstore_half4(inc, i, centerIncident);
+    /*for (int j = 0; j < 6; ++j) {
         vstore_half4(inc, 6 * i + j, incident);
+    }*/
+}
+
+__kernel void Interpolation(__global half* centerIncident,
+                            __global half* incident,
+                            const int patchCount) {
+    int i = get_global_id(0);
+    int ind = i % (patchCount * patchCount);
+    float4 neighbors[9];
+    for (int j = 0; j < 9; ++j) {
+        neighbors[j] = (float4){0, 0, 0, 0};
+    }
+    neighbors[4] = vload_half4(i, centerIncident);
+    if (ind % patchCount == 0) {
+        neighbors[5] = vload_half4(i + 1, centerIncident);
+        neighbors[3] = 2 * neighbors[4] - neighbors[5];
+        if (ind < patchCount) {
+            neighbors[1] = vload_half4(i + patchCount, centerIncident);
+            neighbors[2] = vload_half4(i + patchCount + 1, centerIncident);
+            neighbors[7] = 2 * neighbors[4] - neighbors[1];
+            neighbors[8] = 2 * neighbors[5] - neighbors[2];
+        } else if (ind >= patchCount * (patchCount - 1)) {
+            neighbors[7] = vload_half4(i - patchCount, centerIncident);
+            neighbors[8] = vload_half4(i - patchCount + 1, centerIncident);
+            neighbors[1] = 2 * neighbors[4] - neighbors[7];
+            neighbors[2] = 2 * neighbors[5] - neighbors[8];
+        } else {
+            neighbors[1] = vload_half4(i + patchCount, centerIncident);
+            neighbors[2] = vload_half4(i + patchCount + 1, centerIncident);
+            neighbors[7] = vload_half4(i - patchCount, centerIncident);
+            neighbors[8] = vload_half4(i - patchCount + 1, centerIncident);
+        }
+        neighbors[0] = 2 * neighbors[1] - neighbors[2];
+        neighbors[6] = 2 * neighbors[7] - neighbors[8];
+    } else if ((ind + 1) % patchCount == 0) {
+        neighbors[3] = vload_half4(i - 1, centerIncident);
+        neighbors[5] = 2 * neighbors[4] - neighbors[3];
+        if (ind < patchCount) {
+            neighbors[1] = vload_half4(i + patchCount, centerIncident);
+            neighbors[0] = vload_half4(i + patchCount - 1, centerIncident);
+            neighbors[7] = 2 * neighbors[4] - neighbors[1];
+            neighbors[6] = 2 * neighbors[3] - neighbors[0];
+        } else if (ind >= patchCount * (patchCount - 1)) {
+            neighbors[7] = vload_half4(i - patchCount, centerIncident);
+            neighbors[6] = vload_half4(i - patchCount - 1, centerIncident);
+            neighbors[1] = 2 * neighbors[4] - neighbors[7];
+            neighbors[0] = 2 * neighbors[3] - neighbors[6];
+        } else {
+            neighbors[1] = vload_half4(i + patchCount, centerIncident);
+            neighbors[0] = vload_half4(i + patchCount - 1, centerIncident);
+            neighbors[7] = vload_half4(i - patchCount, centerIncident);
+            neighbors[6] = vload_half4(i - patchCount - 1, centerIncident);
+        }
+        neighbors[2] = 2 * neighbors[1] - neighbors[0];
+        neighbors[8] = 2 * neighbors[7] - neighbors[6];
+    } else {
+        neighbors[3] = vload_half4(i - 1, centerIncident);
+        neighbors[5] = vload_half4(i + 1, centerIncident);
+        if (ind < patchCount) {
+            neighbors[1] = vload_half4(i + patchCount, centerIncident);
+            neighbors[0] = vload_half4(i + patchCount - 1, centerIncident);
+            neighbors[2] = vload_half4(i + patchCount + 1, centerIncident);
+            neighbors[7] = 2 * neighbors[4] - neighbors[1];
+            neighbors[6] = 2 * neighbors[3] - neighbors[0];
+            neighbors[8] = 2 * neighbors[5] - neighbors[2];
+        } else if (ind >= patchCount * (patchCount - 1)) {
+            neighbors[7] = vload_half4(i - patchCount, centerIncident);
+            neighbors[6] = vload_half4(i - patchCount - 1, centerIncident);
+            neighbors[8] = vload_half4(i - patchCount + 1, centerIncident);
+            neighbors[1] = 2 * neighbors[4] - neighbors[7];
+            neighbors[0] = 2 * neighbors[3] - neighbors[6];
+            neighbors[2] = 2 * neighbors[5] - neighbors[8];
+        } else {
+            neighbors[0] = vload_half4(i + patchCount - 1, centerIncident);
+            neighbors[1] = vload_half4(i + patchCount + 0, centerIncident);
+            neighbors[2] = vload_half4(i + patchCount + 1, centerIncident);
+            neighbors[6] = vload_half4(i - patchCount - 1, centerIncident);
+            neighbors[7] = vload_half4(i - patchCount + 0, centerIncident);
+            neighbors[8] = vload_half4(i - patchCount + 1, centerIncident);
+        }
+    }
+    float4 res[6];
+    res[0] = (neighbors[4] + neighbors[3] + neighbors[6] + neighbors[7]) / 4;
+    res[1] = (neighbors[4] + neighbors[3] + neighbors[0] + neighbors[1]) / 4;
+    res[2] = (neighbors[4] + neighbors[5] + neighbors[2] + neighbors[1]) / 4;
+    res[3] = res[0];
+    res[4] = res[2];
+    res[5] = (neighbors[4] + neighbors[5] + neighbors[8] + neighbors[7]) / 4;
+    for (int j = 0; j < 6; ++j) {
+        vstore_half4(res[j], 6 * i + j, incident);
     }
 }
 

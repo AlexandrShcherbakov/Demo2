@@ -74,8 +74,9 @@ void main(void)
 			}
 		}
 	}
-	if (length(lg.spotPosition - pos) < 0.01f) finalColor = vec4(1);
+
 	//finalColor = fragRadio;
+	if (length(lg.spotPosition - pos) < 0.01f) finalColor = vec4(1);
 	finalColor = gamma(finalColor);
 	//finalColor = vec4(lightProj.z);
 	//finalColor = vec4(DecodeShadow(texture(shadowMap, gl_FragCoord.xy / vec2(800, 600))));

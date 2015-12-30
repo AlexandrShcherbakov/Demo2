@@ -330,8 +330,14 @@ void PrepairCLKernels(cl_program program) {
     replaceIncident = clCreateKernel(program, "ReplaceIncident", &cl_err);       CHECK_CL(cl_err);
     CHECK_CL(clSetKernelArg(replaceIncident, 0, sizeof(halfCLPreIncident), &halfCLPreIncident));
     CHECK_CL(clSetKernelArg(replaceIncident, 1, sizeof(halfCLReflection), &halfCLReflection));
-    CHECK_CL(clSetKernelArg(replaceIncident, 2, sizeof(halfCLIncident), &halfCLIncident));
+    CHECK_CL(clSetKernelArg(replaceIncident, 2, sizeof(halfCLCenterIncident), &halfCLCenterIncident));
     CHECK_CL(clSetKernelArg(replaceIncident, 3, sizeof(optimSize), &optimSize));
+
+    cl_int clPatchCount = PATCH_COUNT;
+    interpolation = clCreateKernel(program, "Interpolation", &cl_err);           CHECK_CL(cl_err);
+    CHECK_CL(clSetKernelArg(interpolation, 0, sizeof(halfCLCenterIncident), &halfCLCenterIncident));
+    CHECK_CL(clSetKernelArg(interpolation, 1, sizeof(halfCLIncident), &halfCLIncident));
+    CHECK_CL(clSetKernelArg(interpolation, 2, sizeof(clPatchCount), &clPatchCount));
 }
 
 
@@ -384,6 +390,9 @@ void PrepairCLBuffers() {
     halfCLPreIncident = clCreateBuffer(clContext, CL_MEM_READ_WRITE,
         HALFSIZE * patchCount * patchCount * 4 / OPTIMIZE_CONST, NULL, &cl_err); CHECK_CL(cl_err);
 
+    //Buffer for center incident in patches
+    halfCLCenterIncident = clCreateBuffer(clContext, CL_MEM_READ_WRITE,
+                                    HALFSIZE * 4 * patchCount, NULL, &cl_err);   CHECK_CL(cl_err);
 }
 
 
@@ -498,6 +507,9 @@ void PassCornellBoxDataToGL() {
                 //Add index of normal
                 extGLBufNormInds[vertIter + vertShift] = i;
                 vertShift++;
+            if (i == 0 && h == 0) {
+                printf("%f %f %f\n", pt->vertices[2].x, pt->vertices[2].y, pt->vertices[2].z);
+            }
             }
             vertIter += 3 * (pt->length - 2);
         }
@@ -641,8 +653,11 @@ void ComputeRadiosityOptimize() {
         CHECK_CL(clWaitForEvents(1, &event));
     }
     //printf("OK\n");
-    CHECK_CL(clEnqueueNDRangeKernel(clProg, replaceIncident, 1, 0, &patchCount, NULL, 0, NULL, NULL));
-    CHECK_CL(clFinish(clProg));
+    CHECK_CL(clEnqueueNDRangeKernel(clProg, replaceIncident, 1, 0, &patchCount, NULL, 0, NULL, &event));
+    CHECK_CL(clWaitForEvents(1, &event));
+
+    CHECK_CL(clEnqueueNDRangeKernel(clProg, interpolation, 1, 0, &patchCount, NULL, 0, NULL, NULL));
+
 	CHECK_CL(clEnqueueReleaseGLObjects(clProg, 1, &halfCLIncident, 0, 0, 0));
 }
 

@@ -56,6 +56,7 @@ cl_mem halfCLExcident;
 cl_mem halfCLReflection;
 
 cl_mem halfCLPreIncident;
+cl_mem halfCLCenterIncident;
 
 //Shadow map
 cl_mem clShadowMap;
@@ -73,6 +74,7 @@ cl_kernel sendRays;
 cl_kernel sendRaysV3;
 cl_kernel reduceIncident;
 cl_kernel replaceIncident;
+cl_kernel interpolation;
 
 //Error code
 int cl_err;
