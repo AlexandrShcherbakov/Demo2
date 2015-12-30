@@ -15,7 +15,7 @@
 					<Add option="-g" />
 				</Compiler>
 				<Linker>
-					<Add library="..\clew\bin\Release\libclew.a" />
+					<Add library="external\lib\libclew.a" />
 				</Linker>
 			</Target>
 			<Target title="Release">
@@ -35,8 +35,7 @@
 			<Add option="-O3" />
 			<Add option="-Wall" />
 			<Add option="-std=c99" />
-			<Add directory="../sdl/include" />
-			<Add directory="../Radiosity/CL" />
+			<Add directory="external/include" />
 		</Compiler>
 		<Linker>
 			<Add option="-luser32" />
@@ -44,8 +43,7 @@
 			<Add option="-lopengl32 -lglu32 -lgdi32" />
 			<Add library="user32" />
 			<Add library="..\clew\bin\Debug\libclew.a" />
-			<Add directory="../sdl/i686-w64-mingw32/lib" />
-			<Add directory="../Radiosity/CL" />
+			<Add directory="external/lib/SDL" />
 		</Linker>
 		<Unit filename="clElements.c">
 			<Option compilerVar="CC" />
