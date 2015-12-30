@@ -49,7 +49,7 @@ void main(void)
     float shadowCoef = 0.0f;
     for (float x_off = -1.5f; x_off <= 1.5f; x_off += 1.0f) {
         for (float y_off = -1.5f; y_off <= 1.5f; y_off += 1.0f) {
-            if (DecodeShadow(texture(shadowMap, lightProj.xy + vec2(x_off, y_off) / 1024)) >= lightProj.z - 0.00007f) {
+            if (DecodeShadow(texture(shadowMap, lightProj.xy + vec2(x_off, y_off) / 1024)) >= lightProj.z - 0.0007f) {
                 shadowCoef += 1.0f;
             }
         }

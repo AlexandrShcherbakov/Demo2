@@ -1,16 +1,15 @@
 # depslib dependency file v1.0
-1451445852 source:d:\dropbox\radiosity\demo2\main.c
-	"SDL.h"
+1451517542 source:d:\dropbox\radiosity\demo2\main.c
+	"SDL/SDL.h"
 	<stdio.h>
 	<stdbool.h>
 	<time.h>
 	<GL/gl.h>
 	<GL/glu.h>
 	<windows.h>
-	"../GL/wglext.h"
-	"../GL/glext.h"
-	"../clew/clew.h"
-	<cl_gl.h>
+	"GL/wglext.h"
+	"GL/glext.h"
+	"CL/cl_gl.h"
 	"types.h"
 	"parameters.h"
 	"glElements.h"
@@ -666,15 +665,15 @@
 1450982008 source:d:\dropbox\radiosity\demo2\glelements.c
 	"glElements.h"
 
-1451036361 d:\dropbox\radiosity\demo2\glelements.h
+1451517735 d:\dropbox\radiosity\demo2\glelements.h
 	<stdio.h>
-	"SDL.h"
+	"SDL/SDL.h"
 	"types.h"
 	<GL/gl.h>
 	<GL/glu.h>
 	<windows.h>
-	"../GL/wglext.h"
-	"../GL/glext.h"
+	"GL/wglext.h"
+	"GL/glext.h"
 
 1446373458 d:\dropbox\radiosity\gl\glext.h
 	<windows.h>
@@ -698,7 +697,7 @@
 	<float.h>
 	<stdio.h>
 
-1451447568 d:\dropbox\radiosity\demo2\parameters.h
+1451448521 d:\dropbox\radiosity\demo2\parameters.h
 	"types.h"
 
 1446373458 d:\dropbox\radiosity\gl\wglew.h
@@ -768,10 +767,358 @@
 1451237142 source:d:\dropbox\radiosity\demo2\clelements.c
 	"clElements.h"
 
-1451440063 d:\dropbox\radiosity\demo2\clelements.h
+1451517725 d:\dropbox\radiosity\demo2\clelements.h
 	<stdio.h>
-	"SDL.h"
+	"SDL\SDL.h"
 	"types.h"
-	"../clew/clew.h"
-	<cl_gl.h>
+	"CL/clew.h"
+	"CL/cl_gl.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl.h
+	"SDL_main.h"
+	"SDL_stdinc.h"
+	"SDL_assert.h"
+	"SDL_atomic.h"
+	"SDL_audio.h"
+	"SDL_clipboard.h"
+	"SDL_cpuinfo.h"
+	"SDL_endian.h"
+	"SDL_error.h"
+	"SDL_events.h"
+	"SDL_filesystem.h"
+	"SDL_joystick.h"
+	"SDL_gamecontroller.h"
+	"SDL_haptic.h"
+	"SDL_hints.h"
+	"SDL_loadso.h"
+	"SDL_log.h"
+	"SDL_messagebox.h"
+	"SDL_mutex.h"
+	"SDL_power.h"
+	"SDL_render.h"
+	"SDL_rwops.h"
+	"SDL_system.h"
+	"SDL_thread.h"
+	"SDL_timer.h"
+	"SDL_version.h"
+	"SDL_video.h"
+	"begin_code.h"
+	"close_code.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_main.h
+	"SDL_stdinc.h"
+	"begin_code.h"
+	"close_code.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_stdinc.h
+	"SDL_config.h"
+	<sys/types.h>
+	<stdio.h>
+	<stdlib.h>
+	<stddef.h>
+	<stdarg.h>
+	<stdlib.h>
+	<malloc.h>
+	<stddef.h>
+	<stdarg.h>
+	<memory.h>
+	<string.h>
+	<strings.h>
+	<inttypes.h>
+	<stdint.h>
+	<ctype.h>
+	<math.h>
+	<iconv.h>
+	"begin_code.h"
+	<alloca.h>
+	<malloc.h>
+	<malloc.h>
+	<malloc.h>
+	<stdlib.h>
+	"close_code.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_config.h
+	"SDL_platform.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_platform.h
+	"AvailabilityMacros.h"
+	"TargetConditionals.h"
+	"begin_code.h"
+	"close_code.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\begin_code.h
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\close_code.h
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_assert.h
+	"SDL_config.h"
+	"begin_code.h"
+	<signal.h>
+	"close_code.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_atomic.h
+	"SDL_stdinc.h"
+	"SDL_platform.h"
+	"begin_code.h"
+	"close_code.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_audio.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"SDL_endian.h"
+	"SDL_mutex.h"
+	"SDL_thread.h"
+	"SDL_rwops.h"
+	"begin_code.h"
+	"close_code.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_error.h
+	"SDL_stdinc.h"
+	"begin_code.h"
+	"close_code.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_endian.h
+	"SDL_stdinc.h"
+	<endian.h>
+	"begin_code.h"
+	"close_code.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_mutex.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"begin_code.h"
+	"close_code.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_thread.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"SDL_atomic.h"
+	"SDL_mutex.h"
+	"begin_code.h"
+	<process.h>
+	"close_code.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_rwops.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"begin_code.h"
+	"close_code.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_clipboard.h
+	"SDL_stdinc.h"
+	"begin_code.h"
+	"close_code.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_cpuinfo.h
+	"SDL_stdinc.h"
+	<intrin.h>
+	<intrin.h>
+	<altivec.h>
+	<mmintrin.h>
+	<mm3dnow.h>
+	<xmmintrin.h>
+	<emmintrin.h>
+	"begin_code.h"
+	"close_code.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_events.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"SDL_video.h"
+	"SDL_keyboard.h"
+	"SDL_mouse.h"
+	"SDL_joystick.h"
+	"SDL_gamecontroller.h"
+	"SDL_quit.h"
+	"SDL_gesture.h"
+	"SDL_touch.h"
+	"begin_code.h"
+	"close_code.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_video.h
+	"SDL_stdinc.h"
+	"SDL_pixels.h"
+	"SDL_rect.h"
+	"SDL_surface.h"
+	"begin_code.h"
+	"close_code.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_pixels.h
+	"SDL_stdinc.h"
+	"begin_code.h"
+	"close_code.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_rect.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"SDL_pixels.h"
+	"SDL_rwops.h"
+	"begin_code.h"
+	"close_code.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_surface.h
+	"SDL_stdinc.h"
+	"SDL_pixels.h"
+	"SDL_rect.h"
+	"SDL_blendmode.h"
+	"SDL_rwops.h"
+	"begin_code.h"
+	"close_code.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_blendmode.h
+	"begin_code.h"
+	"close_code.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_keyboard.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"SDL_keycode.h"
+	"SDL_video.h"
+	"begin_code.h"
+	"close_code.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_keycode.h
+	"SDL_stdinc.h"
+	"SDL_scancode.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_scancode.h
+	"SDL_stdinc.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_mouse.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"SDL_video.h"
+	"begin_code.h"
+	"close_code.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_joystick.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"begin_code.h"
+	"close_code.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_gamecontroller.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"SDL_rwops.h"
+	"SDL_joystick.h"
+	"begin_code.h"
+	"close_code.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_quit.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_gesture.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"SDL_video.h"
+	"SDL_touch.h"
+	"begin_code.h"
+	"close_code.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_touch.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"SDL_video.h"
+	"begin_code.h"
+	"close_code.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_filesystem.h
+	"SDL_stdinc.h"
+	"begin_code.h"
+	"close_code.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_haptic.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"SDL_joystick.h"
+	"begin_code.h"
+	"close_code.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_hints.h
+	"SDL_stdinc.h"
+	"begin_code.h"
+	"close_code.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_loadso.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"begin_code.h"
+	"close_code.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_log.h
+	"SDL_stdinc.h"
+	"begin_code.h"
+	"close_code.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_messagebox.h
+	"SDL_stdinc.h"
+	"SDL_video.h"
+	"begin_code.h"
+	"close_code.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_power.h
+	"SDL_stdinc.h"
+	"begin_code.h"
+	"close_code.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_render.h
+	"SDL_stdinc.h"
+	"SDL_rect.h"
+	"SDL_video.h"
+	"begin_code.h"
+	"close_code.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_system.h
+	"SDL_stdinc.h"
+	"SDL_keyboard.h"
+	"SDL_render.h"
+	"SDL_video.h"
+	"begin_code.h"
+	"close_code.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_timer.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"begin_code.h"
+	"close_code.h"
+
+1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_version.h
+	"SDL_stdinc.h"
+	"begin_code.h"
+	"close_code.h"
+
+1451517378 d:\dropbox\radiosity\demo2\external\include\cl\cl_gl.h
+	<OpenCL/cl.h>
+	"proxy-opencl/CL/cl.h"
+
+1451517493 d:\dropbox\radiosity\demo2\external\include\cl\proxy-opencl\cl\cl.h
+	"..\..\clew.h"
+
+1450643920 d:\dropbox\radiosity\demo2\external\include\cl\clew.h
+	<AvailabilityMacros.h>
+	<stdint.h>
+	<stddef.h>
+	<altivec.h>
+	<intrin.h>
+	<xmmintrin.h>
+	<intrin.h>
+	<emmintrin.h>
+	<mmintrin.h>
+	<intrin.h>
+	<immintrin.h>
+
+1446373459 d:\dropbox\radiosity\demo2\external\include\gl\wglext.h
+	<windows.h>
+
+1446373458 d:\dropbox\radiosity\demo2\external\include\gl\glext.h
+	<windows.h>
+	<stddef.h>
+	<inttypes.h>
+	<inttypes.h>
+	<inttypes.h>
+	<stdint.h>
+	<stdint.h>
+	<inttypes.h>
 

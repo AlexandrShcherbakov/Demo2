@@ -3,16 +3,16 @@
 
 #include <stdio.h>
 
-#include "SDL.h"
+#include "SDL/SDL.h"
 #include "types.h"
 #include <GL/gl.h>
 #include <GL/glu.h>
 
 #ifdef _WIN32
 #include <windows.h>
-#include "../GL/wglext.h"
+#include "GL/wglext.h"
 #endif
-#include "../GL/glext.h"
+#include "GL/glext.h"
 
 //Constants
 ///////////////////////////////////////////////////////

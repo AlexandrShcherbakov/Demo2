@@ -1,4 +1,4 @@
-#include "SDL.h"
+#include "SDL/SDL.h"
 #include <stdio.h>
 #include <stdbool.h>
 #include <time.h>
@@ -9,13 +9,13 @@
 
 #ifdef _WIN32
 #include <windows.h>
-#include "../GL/wglext.h"
+#include "GL/wglext.h"
 #endif
-#include "../GL/glext.h"
+#include "GL/glext.h"
 
-#include "../clew/clew.h"
+#include "CL/clew.h"
 
-#include <cl_gl.h>
+#include "CL/cl_gl.h"
 
 //Include my libraries
 #include "types.h"

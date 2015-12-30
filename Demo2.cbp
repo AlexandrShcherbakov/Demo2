@@ -42,7 +42,6 @@
 			<Add option="-luser32" />
 			<Add option="-lmingw32 -lSDL2main -lSDL2" />
 			<Add option="-lopengl32 -lglu32 -lgdi32" />
-			<Add option="-fopenmp" />
 			<Add library="user32" />
 			<Add library="..\clew\bin\Debug\libclew.a" />
 			<Add directory="../sdl/i686-w64-mingw32/lib" />

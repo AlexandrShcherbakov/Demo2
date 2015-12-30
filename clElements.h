@@ -3,12 +3,12 @@
 
 #include <stdio.h>
 
-#include "SDL.h"
+#include "SDL\SDL.h"
 #include "types.h"
 
-#include "../clew/clew.h"
+#include "CL/clew.h"
 
-#include <cl_gl.h>
+#include "CL/cl_gl.h"
 
 //Constants
 ///////////////////////////////////////////////////////

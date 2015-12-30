@@ -19,7 +19,7 @@ float4 magicMultV2(float16 mat, float4 f) {
     return res;
 }
 
-float4 make_float4(float a, float b, float c, float d) 
+float4 make_float4(float a, float b, float c, float d)
 {
   float4 res;
   res.x = a;
@@ -172,7 +172,7 @@ __kernel void Interpolation(__global half* centerIncident,
     int ind = i % (patchCount * patchCount);
     float4 neighbors[9];
     for (int j = 0; j < 9; ++j) {
-        neighbors[j] = (float4){0, 0, 0, 0};
+        neighbors[j] = make_float4(0, 0, 0, 0);
     }
     neighbors[4] = vload_half4(i, centerIncident);
     if (ind % patchCount == 0) {
