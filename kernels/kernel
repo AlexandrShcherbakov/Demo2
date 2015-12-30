@@ -19,6 +19,16 @@ float4 magicMultV2(float16 mat, float4 f) {
     return res;
 }
 
+float4 make_float4(float a, float b, float c, float d) 
+{
+  float4 res;
+  res.x = a;
+  res.y = b;
+  res.z = c;
+  res.w = d;
+  return res;
+}
+
 __kernel void ComputeLightEmission(__global half* excident,
                                    __global float4* patchPoints,
                                    __global float16* glightMatrix,
@@ -50,7 +60,7 @@ __kernel void ComputeLightEmission(__global half* excident,
 			float4 lightPoint = magicMultV2(lightMatrix, p4);
 			float3 lightProj = lightPoint.xyz / lightPoint.w / 2 + (float3){0.5f, 0.5f, 0.5f};
 			float depth = DecodeShadow(read_imagef(shadowMap, sampler, lightProj.xy));
-			if (depth > lightProj.z - 0.000007f) {
+			if (depth > lightProj.z - 0.0007f) {
                 float currentAngle = dot(lightDirection, normalize(point - lightPosition));
                 float angleImpact = clamp((outterAngle - currentAngle)
                                         / (outterAngle - innerAngle), 0.0f, 1.0f);
@@ -136,7 +146,7 @@ __kernel void ReduceIncident(__global half* preincident, const int len) {
     int index2 = i * len + j + locsize;
     float4 val = vload_half4(index2, preincident);
     float4 val1 = vload_half4(index1, preincident);
-    vstore_half4((float4){0, 0, 0, 0}, index2, preincident);
+    vstore_half4(make_float4(0, 0, 0, 0), index2, preincident);
     vstore_half4(val + val1, index1, preincident);
 }
 
