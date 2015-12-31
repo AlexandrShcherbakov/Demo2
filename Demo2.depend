@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1451539855 source:d:\dropbox\radiosity\demo2\main.c
+1451545531 source:d:\dropbox\radiosity\demo2\main.c
 	"SDL/SDL.h"
 	<stdio.h>
 	<stdbool.h>
@@ -698,7 +698,7 @@
 	<float.h>
 	<stdio.h>
 
-1451448521 d:\dropbox\radiosity\demo2\parameters.h
+1451545664 d:\dropbox\radiosity\demo2\parameters.h
 	"types.h"
 
 1446373458 d:\dropbox\radiosity\gl\wglew.h
@@ -768,7 +768,7 @@
 1451237142 source:d:\dropbox\radiosity\demo2\clelements.c
 	"clElements.h"
 
-1451539541 d:\dropbox\radiosity\demo2\clelements.h
+1451543331 d:\dropbox\radiosity\demo2\clelements.h
 	<stdio.h>
 	"SDL\SDL.h"
 	"types.h"

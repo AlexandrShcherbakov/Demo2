@@ -445,6 +445,9 @@ void PrepairOpenCL() {
     printf("%s\n", clInfo);
     clGetDeviceInfo(device_id, CL_DEVICE_NAME, 256 * 4, clInfo, NULL);
     printf("%s\n", clInfo);
+    size_t sizeInfo;
+    clGetDeviceInfo(device_id, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(sizeInfo), &sizeInfo, &cl_err);
+    printf("Max work-group size: %u\n", sizeInfo);
 
     cl_context_properties properties[] = {
     CL_GL_CONTEXT_KHR, (cl_context_properties)wglGetCurrentContext(), // WGL Context
@@ -668,8 +671,9 @@ void ComputeRadiosityOptimizeV2() {
     CHECK_CL(clEnqueueNDRangeKernel(clProg, sendRaysV3, 2, 0, sizes, NULL, 0, NULL, &event));
     CHECK_CL(clWaitForEvents(1, &event));
 
-    int reduceSize = patchCount * patchCount / OPTIMIZE_CONST;
-    CHECK_CL(clEnqueueNDRangeKernel(clProg, reduceIncidentV2, 1, 0, &reduceSize, NULL, 0, NULL, &event));
+    int reduceSize = patchCount * 256;
+    int workGroupSize = 256;
+    CHECK_CL(clEnqueueNDRangeKernel(clProg, reduceIncidentV2, 1, 0, &reduceSize, &workGroupSize, 0, NULL, &event));
     CHECK_CL(clWaitForEvents(1, &event));
 
     CHECK_CL(clEnqueueNDRangeKernel(clProg, interpolation, 1, 0, &patchCount, NULL, 0, NULL, NULL));
