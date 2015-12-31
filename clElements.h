@@ -73,6 +73,7 @@ cl_kernel convertROFloatToHalf;
 cl_kernel sendRays;
 cl_kernel sendRaysV3;
 cl_kernel reduceIncident;
+cl_kernel reduceIncidentV2;
 cl_kernel replaceIncident;
 cl_kernel interpolation;
 

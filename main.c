@@ -338,6 +338,12 @@ void PrepairCLKernels(cl_program program) {
     CHECK_CL(clSetKernelArg(interpolation, 0, sizeof(halfCLCenterIncident), &halfCLCenterIncident));
     CHECK_CL(clSetKernelArg(interpolation, 1, sizeof(halfCLIncident), &halfCLIncident));
     CHECK_CL(clSetKernelArg(interpolation, 2, sizeof(clPatchCount), &clPatchCount));
+
+    reduceIncidentV2 = clCreateKernel(program, "ReduceIncidentV2", &cl_err);     CHECK_CL(cl_err);
+    CHECK_CL(clSetKernelArg(reduceIncidentV2, 0, sizeof(halfCLPreIncident), &halfCLPreIncident));
+    CHECK_CL(clSetKernelArg(reduceIncidentV2, 1, sizeof(halfCLReflection), &halfCLReflection));
+    CHECK_CL(clSetKernelArg(reduceIncidentV2, 2, sizeof(halfCLCenterIncident), &halfCLCenterIncident));
+    CHECK_CL(clSetKernelArg(reduceIncidentV2, 3, sizeof(optimSize), &optimSize));
 }
 
 
@@ -641,18 +647,11 @@ void ComputeRadiosityOptimize() {
     CHECK_CL(clEnqueueNDRangeKernel(clProg, sendRaysV3, 2, 0, sizes, NULL, 0, NULL, &event));
     CHECK_CL(clWaitForEvents(1, &event));
 
-    /*sizes[1] = patchCount / 2 / OPTIMIZE_CONST;
-    CHECK_CL(clEnqueueNDRangeKernel(clProg, reduceIncident, 2, 0, sizes, NULL, 0, NULL, NULL));
-    CHECK_CL(clFinish(clProg));
-    sizes[1] = sizes[1] / 2 + sizes[1] % 2;
-    CHECK_CL(clEnqueueNDRangeKernel(clProg, reduceIncident, 2, 0, sizes, NULL, 0, NULL, NULL));
-    CHECK_CL(clFinish(clProg));*/
     for (int i = patchCount / 2 / OPTIMIZE_CONST; i > 1; i = i / 2 + i % 2) {
         sizes[1] = i;
         CHECK_CL(clEnqueueNDRangeKernel(clProg, reduceIncident, 2, 0, sizes, NULL, 0, NULL, &event));
         CHECK_CL(clWaitForEvents(1, &event));
     }
-    //printf("OK\n");
     CHECK_CL(clEnqueueNDRangeKernel(clProg, replaceIncident, 1, 0, &patchCount, NULL, 0, NULL, &event));
     CHECK_CL(clWaitForEvents(1, &event));
 
@@ -660,6 +659,24 @@ void ComputeRadiosityOptimize() {
 
 	CHECK_CL(clEnqueueReleaseGLObjects(clProg, 1, &halfCLIncident, 0, 0, 0));
 }
+
+void ComputeRadiosityOptimizeV2() {
+    CHECK_CL(clEnqueueAcquireGLObjects(clProg, 1, &halfCLIncident, 0, 0, 0));
+
+    cl_event event;
+    int sizes[] = {patchCount, patchCount / OPTIMIZE_CONST};
+    CHECK_CL(clEnqueueNDRangeKernel(clProg, sendRaysV3, 2, 0, sizes, NULL, 0, NULL, &event));
+    CHECK_CL(clWaitForEvents(1, &event));
+
+    int reduceSize = patchCount * patchCount / OPTIMIZE_CONST;
+    CHECK_CL(clEnqueueNDRangeKernel(clProg, reduceIncidentV2, 1, 0, &reduceSize, NULL, 0, NULL, &event));
+    CHECK_CL(clWaitForEvents(1, &event));
+
+    CHECK_CL(clEnqueueNDRangeKernel(clProg, interpolation, 1, 0, &patchCount, NULL, 0, NULL, NULL));
+
+	CHECK_CL(clEnqueueReleaseGLObjects(clProg, 1, &halfCLIncident, 0, 0, 0));
+}
+
 
 float computeFormFactorForPatches(patch p1, patch p2, int pl1, int pl2) {
 	float result = 0;
@@ -781,7 +798,7 @@ void DrawCornellBox(SDL_Window * window) {
 		SetStandartCamera();
 		ComputeEmission();
 		//ComputeRadiosity();
-		ComputeRadiosityOptimize();
+		ComputeRadiosityOptimizeV2();
 		//actualShadowMap = true;
 
 	}

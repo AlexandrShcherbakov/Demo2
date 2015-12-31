@@ -150,6 +150,27 @@ __kernel void ReduceIncident(__global half* preincident, const int len) {
     vstore_half4(val + val1, index1, preincident);
 }
 
+__kernel void ReduceIncidentV2(__global half* preincident,
+                               __global half* reflection,
+                               __global half* centerIncident,
+                               const int len) {
+    __local float4 inc[256];
+    int idx = get_local_id(0);
+    int gr_id = get_group_id(0);
+    inc[idx] = vload_half4(gr_id * len + idx, preincident);
+    barrier(CLK_LOCAL_MEM_FENCE);
+    for (int i = 128; i > 0; i >>= 2) {
+        if (idx < i) {
+            inc[idx] += inc[idx + i];
+        }
+        barrier(CLK_LOCAL_MEM_FENCE);
+    }
+    if (idx != 0) {
+        return;
+    }
+    vstore_half4(vload_half4(gr_id, reflection) * inc[0], gr_id, centerIncident);
+}
+
 
 __kernel void ReplaceIncident(__global half* preincident,
                               __global half* reflection,
