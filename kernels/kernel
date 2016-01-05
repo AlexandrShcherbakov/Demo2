@@ -1,6 +1,6 @@
 #pragma OPENCL EXTENSION cl_khr_fp16 : enable
 
-#define SAMPLE_ITERS 20
+//#define SAMPLE_ITERS 20
 
 float square(float3 A, float3 B, float3 C, float3 D) {
     return (length(cross(B - A, C - A)) + length(cross(C - A, D - A))) / 2;
@@ -31,10 +31,12 @@ float4 make_float4(float a, float b, float c, float d)
 
 __kernel void ComputeLightEmission(__global half* excident,
                                    __global float4* patchPoints,
-                                   __global float16* glightMatrix,
-                                   __global const float* lightParams,
+                                   __constant float16* glightMatrix,
+                                   __constant float* lightParams,
                                    image2d_t shadowMap,
-                                   __global half* reflection) {
+                                   __global half* reflection,
+                                   __constant float2* hammersleyDist,
+                                   const int SAMPLE_ITERS) {
 	int i = get_global_id(0);
 	float16 lightMatrix = *glightMatrix;
     float innerAngle = lightParams[0];
@@ -51,24 +53,22 @@ __kernel void ComputeLightEmission(__global half* excident,
 
 	sampler_t sampler = CLK_NORMALIZED_COORDS_TRUE | CLK_ADDRESS_CLAMP | CLK_FILTER_LINEAR;
 
-	float3 AB = (B - A) / SAMPLE_ITERS;
-	float3 AD = (D - A) / SAMPLE_ITERS;
+	float3 AB = (B - A);
+	float3 AD = (D - A);
 	for (int j = 0; j <= SAMPLE_ITERS; ++j) {
-        for (int h = 0; h <= SAMPLE_ITERS; ++h) {
-			float3 point = A + j * AB + h * AD;
-			float4 p4 = (float4){point.x, point.y, point.z, 1};
-			float4 lightPoint = magicMultV2(lightMatrix, p4);
-			float3 lightProj = lightPoint.xyz / lightPoint.w / 2 + (float3){0.5f, 0.5f, 0.5f};
-			float depth = DecodeShadow(read_imagef(shadowMap, sampler, lightProj.xy));
-			if (depth > lightProj.z - 0.0007f) {
-                float currentAngle = dot(lightDirection, normalize(point - lightPosition));
-                float angleImpact = clamp((outterAngle - currentAngle)
-                                        / (outterAngle - innerAngle), 0.0f, 1.0f);
-                resultEmission += angleImpact;
-            }
+        float3 point = A + AB * hammersleyDist[j].x + AD * hammersleyDist[j].y;
+        float4 p4 = (float4){point.x, point.y, point.z, 1};
+        float4 lightPoint = magicMultV2(lightMatrix, p4);
+        float3 lightProj = lightPoint.xyz / lightPoint.w / 2 + (float3){0.5f, 0.5f, 0.5f};
+        float depth = DecodeShadow(read_imagef(shadowMap, sampler, lightProj.xy));
+        if (depth > lightProj.z - 0.0007f) {
+            float currentAngle = dot(lightDirection, normalize(point - lightPosition));
+            float angleImpact = clamp((outterAngle - currentAngle)
+                                    / (outterAngle - innerAngle), 0.0f, 1.0f);
+            resultEmission += angleImpact;
         }
 	}
-	resultEmission /= (SAMPLE_ITERS + 1) * (SAMPLE_ITERS + 1);
+	resultEmission /= SAMPLE_ITERS;
 	resultEmission *= square(A, B, C, D) * get_global_size(0) / 15;// * sqrt((float)get_global_size(0)) * 4;
     float4 resExc = resultEmission * vload_half4(i, reflection);
 	vstore_half4(resExc, i, excident);
@@ -87,11 +87,6 @@ __kernel void FloatToHalfROBuffers(__global float* formFactors,
     for (j = 0; j < size; ++j) {
         vstore_half(formFactors[i * size + j], i * size + j, halfFormFactors);
     }
-}
-
-__kernel void NullDeposit(__global half* deposit) {
-    int i = get_global_id(0);
-    //vstore_half4((float4){0.0f, 0.0f, 0.0f, 0.0f}, i, deposit);
 }
 
 
@@ -137,6 +132,43 @@ __kernel void SendRaysV3(__global half* excident,
     vstore_half4(inc, i * get_global_size(1) + i1, preincident);
 }
 
+__kernel void SendRaysV4(__global half* excident,
+                       __global half* ff,
+                       __global half* reflection,
+                       __global half* centerIncident) {
+	#define GR_SIZE 512
+    int gr_id = get_group_id(0);
+    int idx = get_local_id(0);
+    int size = get_num_groups(0);
+    float4 inc = make_float4(0, 0, 0, 0);
+    int group_work_size = size / 4 / GR_SIZE + ((size / 4) % GR_SIZE ? 1 : 0);
+    float16 exc;
+    float4 f;
+	for (int j = idx * 4 * group_work_size; j < min(size, (idx + 1) * 4 * group_work_size); j += 4) {
+		int it = gr_id * size + j;
+		exc = vload_half16(j / 4, excident);
+		//exc = vload_half16(0, excident);
+		f = vload_half4(it / 4, ff);
+		//f = vload_half4(0, ff);
+		inc += magicMult(exc, f);
+	}
+	__local float4 incBuf[GR_SIZE];
+	incBuf[idx] = make_float4(0, 0, 0, 0);
+	incBuf[idx] = inc;
+    barrier(CLK_LOCAL_MEM_FENCE);
+    for (int i = GR_SIZE / 2; i > 0; i >>= 1) {
+        if (idx < i) {
+            incBuf[idx] += incBuf[idx + i];
+        }
+        barrier(CLK_LOCAL_MEM_FENCE);
+    }
+    if (idx != 0) {
+        return;
+    }
+    vstore_half4(vload_half4(gr_id, reflection) * incBuf[0], gr_id, centerIncident);
+}
+
+
 __kernel void ReduceIncident(__global half* preincident, const int len) {
     int i = get_global_id(0);
     int j = get_global_id(1);
@@ -145,8 +177,8 @@ __kernel void ReduceIncident(__global half* preincident, const int len) {
     int index2 = i * len + j + locsize;
     float4 val = vload_half4(index2, preincident);
     float4 val1 = vload_half4(index1, preincident);
-    vstore_half4(make_float4(0, 0, 0, 0), index2, preincident);
-    vstore_half4(val + val1, index1, preincident);
+    //vstore_half4(make_float4(0, 0, 0, 0), index2, preincident);
+    //vstore_half4(val + val1, index1, preincident);
 }
 
 __kernel void ReduceIncidentV2(__global half* preincident,
@@ -159,9 +191,6 @@ __kernel void ReduceIncidentV2(__global half* preincident,
     inc[idx] = vload_half4(gr_id * len + idx, preincident);
     if (idx >= len) {
         inc[idx] = make_float4(0, 0, 0, 0);
-    }
-    if (gr_id == 0 && idx < len) {
-        //printf("%d %f %f %f\n", idx, inc[idx].x, inc[idx].y, inc[idx].z);
     }
     barrier(CLK_LOCAL_MEM_FENCE);
     for (int i = 128; i > 0; i >>= 1) {

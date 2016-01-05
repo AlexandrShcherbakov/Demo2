@@ -2,6 +2,7 @@
 #define DEMO2_PARAMETERS
 
 #include "types.h"
+#include <stdbool.h>
 
 //Scene parameters
 int polygonCount;
@@ -27,8 +28,9 @@ enum {
     SCREEN_WIDTH = 800,
     SCREEN_HEIGHT = 600,
     SHADOWMAP_EDGE = 1024,
-    PATCH_COUNT = 12,
+    PATCH_COUNT = 6,
     MONTE_KARLO_ITERATIONS_COUNT = 20,
+    LIGHT_COUNT_ITERATIONS = 100,
 };
 
 #endif

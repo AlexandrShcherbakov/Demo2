@@ -82,7 +82,7 @@ void ReadCornellBox() {
 }
 
 //Add buffers and other data to OpenGL
-void PrepairGLBuffers() {
+void PrepareGLBuffers() {
     //Add Vertex Array Object, which contains all buffers
     glGenVertexArrays(1, &meshVAO);                                              CHECK_GL_ERRORS
 
@@ -95,7 +95,7 @@ void PrepairGLBuffers() {
 }
 
 
-void PrepairShadowMap() {
+void PrepareShadowMap() {
     //Free old resources
     glDeleteFramebuffers(1, &fbo);                                               CHECK_GL_ERRORS
     glDeleteTextures(1, &shadowMap);                                             CHECK_GL_ERRORS
@@ -194,7 +194,7 @@ void SetStandartCamera() {
 	float projectionMatrix[16];
 	const float aspectRatio = (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT;
 	//Fill matrix
-	Matrix4Perspective(projectionMatrix, viewAngle, aspectRatio, 0.5f, 5.0f);
+	Matrix4Perspective(projectionMatrix, viewAngle, aspectRatio, 0.55f, 5.0f);
 
 	//Shift matrix
 	float shiftMatrix[16];
@@ -229,7 +229,7 @@ void ChangeUniforms() {
 }
 
 //Function, which creates OpenGL context, sets parameters of scene and take data to OpenGL buffers
-void PrepairOpenGL(SDL_Window *window) {
+void PrepareOpenGL(SDL_Window *window) {
 	//Create context for OpenGL
     SDL_GLContext *context = SDL_GL_CreateContext(window);
     SDL_GL_MakeCurrent(window, context);
@@ -287,13 +287,13 @@ void PrepairOpenGL(SDL_Window *window) {
     //Enable z-buffer
     glEnable(GL_DEPTH_TEST);                                                     CHECK_GL_ERRORS
 
-    PrepairGLBuffers();
+    PrepareGLBuffers();
     AddGLUniforms();
-    PrepairShadowMap();
+    PrepareShadowMap();
 }
 
 
-void PrepairCLKernels(cl_program program) {
+void PrepareCLKernels(cl_program program) {
 
     computeLightEmission = clCreateKernel(program, "ComputeLightEmission", &cl_err); CHECK_CL(cl_err);
 	CHECK_CL(clSetKernelArg(computeLightEmission, 0, sizeof(halfCLExcident), &halfCLExcident));
@@ -302,6 +302,9 @@ void PrepairCLKernels(cl_program program) {
     CHECK_CL(clSetKernelArg(computeLightEmission, 3, sizeof(intCLLightParameters), &intCLLightParameters));
     CHECK_CL(clSetKernelArg(computeLightEmission, 4, sizeof(clShadowMap), &clShadowMap));
     CHECK_CL(clSetKernelArg(computeLightEmission, 5, sizeof(halfCLReflection), &halfCLReflection));
+    CHECK_CL(clSetKernelArg(computeLightEmission, 6, sizeof(hammersleyCLBuf), &hammersleyCLBuf));
+    cl_int sample_iters = LIGHT_COUNT_ITERATIONS;
+    CHECK_CL(clSetKernelArg(computeLightEmission, 7, sizeof(sample_iters), &sample_iters));
 
     convertROFloatToHalf = clCreateKernel(program, "FloatToHalfROBuffers", &cl_err); CHECK_CL(cl_err);
     CHECK_CL(clSetKernelArg(convertROFloatToHalf, 0, sizeof(intCLFormFactor), &intCLFormFactor));
@@ -344,10 +347,16 @@ void PrepairCLKernels(cl_program program) {
     CHECK_CL(clSetKernelArg(reduceIncidentV2, 1, sizeof(halfCLReflection), &halfCLReflection));
     CHECK_CL(clSetKernelArg(reduceIncidentV2, 2, sizeof(halfCLCenterIncident), &halfCLCenterIncident));
     CHECK_CL(clSetKernelArg(reduceIncidentV2, 3, sizeof(optimSize), &optimSize));
+
+    sendRaysV4 = clCreateKernel(program, "SendRaysV4", &cl_err);                 CHECK_CL(cl_err);
+    CHECK_CL(clSetKernelArg(sendRaysV4, 0, sizeof(halfCLExcident), &halfCLExcident));
+    CHECK_CL(clSetKernelArg(sendRaysV4, 1, sizeof(halfCLFormFactor), &halfCLFormFactor));
+    CHECK_CL(clSetKernelArg(sendRaysV4, 2, sizeof(halfCLReflection), &halfCLReflection));
+    CHECK_CL(clSetKernelArg(sendRaysV4, 3, sizeof(halfCLCenterIncident), &halfCLCenterIncident));
 }
 
 
-void PrepairCLBuffers() {
+void PrepareCLBuffers() {
 	//Buffer for form-factors
     intCLFormFactor = clCreateBuffer(clContext, CL_MEM_READ_ONLY,
                 sizeof(*formFactors) * patchCount * patchCount, NULL, &cl_err);  CHECK_CL(cl_err);
@@ -399,6 +408,11 @@ void PrepairCLBuffers() {
     //Buffer for center incident in patches
     halfCLCenterIncident = clCreateBuffer(clContext, CL_MEM_READ_WRITE,
                                     HALFSIZE * 4 * patchCount, NULL, &cl_err);   CHECK_CL(cl_err);
+
+    //Prepare hammersley distribution
+    GenerateHammersleyForLightCount();
+    hammersleyCLBuf = clCreateBuffer(clContext, CL_MEM_READ_ONLY,
+                                      sizeof(hammersleyDist), NULL, &cl_err);    CHECK_CL(cl_err);
 }
 
 
@@ -423,12 +437,15 @@ void FillCLBuffers() {
     }
     CHECK_CL(clEnqueueWriteBuffer(clProg, intCLMatReflection, CL_TRUE, 0, sizeof(*refl) * polygonCount, refl, 0, NULL, NULL));
 
+    //Fill buffer for hammersley distribution
+    CHECK_CL(clEnqueueWriteBuffer(clProg, hammersleyCLBuf, CL_TRUE, 0, sizeof(hammersleyDist), hammersleyDist, 0, NULL, NULL));
+
     //Fill half form-factors and reflectance on GPU
     CHECK_CL(clEnqueueNDRangeKernel(clProg, convertROFloatToHalf, 1, 0, &patchCount, NULL, 0, NULL, NULL));
 	CHECK_CL(clFinish(clProg));
 }
 
-void PrepairOpenCL() {
+void PrepareOpenCL() {
     clewInit(L"OpenCL.dll");
 
     cl_device_id device_id;             // compute device id
@@ -437,6 +454,7 @@ void PrepairOpenCL() {
     int err;
 
     CHECK_CL(clGetPlatformIDs(30, platforms, &platfcnt));
+    printf("Number of platforms: %d\n", platfcnt);
 
     CHECK_CL(clGetDeviceIDs(platforms[0], CL_DEVICE_TYPE_GPU, 1, &device_id, NULL));
 
@@ -448,6 +466,10 @@ void PrepairOpenCL() {
     size_t sizeInfo;
     clGetDeviceInfo(device_id, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(sizeInfo), &sizeInfo, &cl_err);
     printf("Max work-group size: %u\n", sizeInfo);
+    clGetDeviceInfo(device_id, CL_DEVICE_GLOBAL_MEM_CACHE_SIZE, sizeof(sizeInfo), &sizeInfo, &cl_err);
+    printf("Global cache size: %u\n", sizeInfo);
+    clGetDeviceInfo(device_id, CL_DEVICE_GLOBAL_MEM_CACHELINE_SIZE, sizeof(sizeInfo), &sizeInfo, &cl_err);
+    printf("Global cache line size: %u\n", sizeInfo);
 
     cl_context_properties properties[] = {
     CL_GL_CONTEXT_KHR, (cl_context_properties)wglGetCurrentContext(), // WGL Context
@@ -480,8 +502,8 @@ void PrepairOpenCL() {
         exit(1);
     }
 
-    PrepairCLBuffers();
-    PrepairCLKernels(program);
+    PrepareCLBuffers();
+    PrepareCLKernels(program);
     FillCLBuffers();
 }
 
@@ -516,9 +538,6 @@ void PassCornellBoxDataToGL() {
                 //Add index of normal
                 extGLBufNormInds[vertIter + vertShift] = i;
                 vertShift++;
-            if (i == 0 && h == 0) {
-                printf("%f %f %f\n", pt->vertices[2].x, pt->vertices[2].y, pt->vertices[2].z);
-            }
             }
             vertIter += 3 * (pt->length - 2);
         }
@@ -668,17 +687,59 @@ void ComputeRadiosityOptimizeV2() {
 
     cl_event event;
     int sizes[] = {patchCount, patchCount / OPTIMIZE_CONST};
+    clock_t tm = clock();
     CHECK_CL(clEnqueueNDRangeKernel(clProg, sendRaysV3, 2, 0, sizes, NULL, 0, NULL, &event));
     CHECK_CL(clWaitForEvents(1, &event));
+    printf("Compute direct light: %f\n", (float)(clock() - tm) / CLOCKS_PER_SEC); tm = clock();
 
     int reduceSize = patchCount * 256;
     int workGroupSize = 256;
     CHECK_CL(clEnqueueNDRangeKernel(clProg, reduceIncidentV2, 1, 0, &reduceSize, &workGroupSize, 0, NULL, &event));
     CHECK_CL(clWaitForEvents(1, &event));
+    printf("Reduction: %f\n", (float)(clock() - tm) / CLOCKS_PER_SEC); tm = clock();
 
     CHECK_CL(clEnqueueNDRangeKernel(clProg, interpolation, 1, 0, &patchCount, NULL, 0, NULL, NULL));
 
 	CHECK_CL(clEnqueueReleaseGLObjects(clProg, 1, &halfCLIncident, 0, 0, 0));
+	printf("Interpolation: %f\n", (float)(clock() - tm) / CLOCKS_PER_SEC); tm = clock();
+}
+
+void ComputeRadiosityOptimizeV3() {
+    CHECK_CL(clEnqueueAcquireGLObjects(clProg, 1, &halfCLIncident, 0, 0, 0));
+
+    cl_event event;
+    int sizes[] = {patchCount, patchCount / OPTIMIZE_CONST};
+    clock_t tm = clock();
+
+	#define GR_SIZE 512
+    int reduceSize = patchCount * GR_SIZE;
+    int workGroupSize = GR_SIZE;
+    CHECK_CL(clEnqueueNDRangeKernel(clProg, sendRaysV4, 1, 0, &reduceSize, &workGroupSize, 0, NULL, &event));
+    CHECK_CL(clWaitForEvents(1, &event));
+    //printf("Compute direct light and reduction: %f\n", (float)(clock() - tm) / CLOCKS_PER_SEC); tm = clock();
+    //printf("Reduction: %f\n", (float)(clock() - tm) / CLOCKS_PER_SEC); tm = clock();
+
+    CHECK_CL(clEnqueueNDRangeKernel(clProg, interpolation, 1, 0, &patchCount, NULL, 0, NULL, NULL));
+
+	CHECK_CL(clEnqueueReleaseGLObjects(clProg, 1, &halfCLIncident, 0, 0, 0));
+	//printf("Interpolation: %f\n", (float)(clock() - tm) / CLOCKS_PER_SEC); tm = clock();
+}
+
+
+
+void GenerateHammersleyForLightCount() {
+    for (int i = 0; i < LIGHT_COUNT_ITERATIONS; ++i) {
+        float u = 0;
+        int kk = i;
+
+        for (float p = 0.5; kk; p *= 0.5, kk >>= 1)
+            if (kk & 1)
+                u += p;
+
+        float v = (i + 0.5) / LIGHT_COUNT_ITERATIONS;
+        hammersleyDist[i].s[0] = u;
+        hammersleyDist[i].s[1] = v;
+	}
 }
 
 
@@ -802,7 +863,7 @@ void DrawCornellBox(SDL_Window * window) {
 		SetStandartCamera();
 		ComputeEmission();
 		//ComputeRadiosity();
-		ComputeRadiosityOptimizeV2();
+		ComputeRadiosityOptimizeV3();
 		//actualShadowMap = true;
 
 	}
@@ -890,10 +951,10 @@ int main(int argc, char* argv[]) {
     //Variable for events which creates in runtime
     SDL_Event e;
 
-    PrepairOpenGL(window);
+    PrepareOpenGL(window);
     PassCornellBoxDataToGL();
     ReadOrComputeFormFactors();
-    PrepairOpenCL();
+    PrepareOpenCL();
 
     SDL_GL_SetSwapInterval(1);
     SDL_WarpMouseInWindow(window, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
