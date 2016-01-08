@@ -711,7 +711,7 @@ void ComputeRadiosityOptimizeV3() {
     int sizes[] = {patchCount, patchCount / OPTIMIZE_CONST};
     clock_t tm = clock();
 
-	#define GR_SIZE 512
+	#define GR_SIZE 256
     int reduceSize = patchCount * GR_SIZE;
     int workGroupSize = GR_SIZE;
     CHECK_CL(clEnqueueNDRangeKernel(clProg, sendRaysV4, 1, 0, &reduceSize, &workGroupSize, 0, NULL, &event));
@@ -722,6 +722,7 @@ void ComputeRadiosityOptimizeV3() {
     CHECK_CL(clEnqueueNDRangeKernel(clProg, interpolation, 1, 0, &patchCount, NULL, 0, NULL, NULL));
 
 	CHECK_CL(clEnqueueReleaseGLObjects(clProg, 1, &halfCLIncident, 0, 0, 0));
+
 	//printf("Interpolation: %f\n", (float)(clock() - tm) / CLOCKS_PER_SEC); tm = clock();
 }
 

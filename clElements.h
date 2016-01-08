@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-#include "SDL\SDL.h"
+#include "SDL/SDL.h"
 #include "types.h"
 #include "parameters.h"
 
