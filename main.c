@@ -816,12 +816,18 @@ int computeFormFactorForPolygons(int p1, int p2) {
 
 int computeFormFactorForScene() {
 	printf("FF start\n");
+	clock_t tm;
+
     for (int i = 0; i < polygonCount; ++i) {
+
+        //#pragma omp parallel for
         for (int j = i + 1; j < polygonCount; ++j) {
-			clock_t tm = clock();
+            tm = clock();
             computeFormFactorForPolygons(i, j);
             printf("%d %d %f\n", i, j, (float)(clock() - tm) / CLOCKS_PER_SEC);
         }
+
+      //printf("progress = %f \n", ((float)i / (float)polygonCount));
     }
     return 1;
 }
@@ -829,9 +835,15 @@ int computeFormFactorForScene() {
 void ReadOrComputeFormFactors() {
 	formFactors = calloc(sizeof(*formFactors), patchCount * patchCount);
 	char ff_file[50];
-    sprintf(ff_file, "ff\\%d", patchCount);
+    sprintf(ff_file, "ff_%d", patchCount);
+
+    printf("[info]: ff_file    = %s\n", ff_file);
+    printf("[info]: patchCount = %d\n", patchCount);
+
     FILE *formfactfile;
+
     if ((formfactfile = fopen(ff_file, "rb")) == NULL) {
+        printf("Form-factor file not found\n");
 		computeFormFactorForScene();
         formfactfile = fopen(ff_file, "wb");
         for (int i = 0; i < patchCount; ++i) {
