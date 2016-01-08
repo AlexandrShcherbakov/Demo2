@@ -41,7 +41,7 @@ vec4 gamma(vec4 v) {
 
 void main(void)
 {
-    //finalColor = (sceneColor * mat.ambient) + (lg.ambient * mat.ambient);
+    //finalColor = (sceneColor * mat.ambient) / 10 + (lg.ambient * mat.ambient) / 10;
     finalColor = fragRadio;
 
     vec3 lightProj = posForLight.xyz / posForLight.w / 2 + vec3(0.5f);

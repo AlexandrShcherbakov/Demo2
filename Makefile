@@ -1,11 +1,8 @@
 CFLAGS += '-std=c99'
-CFLAGS += -I'../sdl/include'
-CFLAGS += -I'..'
-CFLAGS += -I'../Radiosity/CL'
-CFLAGS += -I'../clew'
+CFLAGS += -I'external/include'
 CFLAGS += '-Wall'
-LDFLAGS += -L'./../sdl/lib/x64' 
-LDFLAGS += -L'./../clew/bin/Release'
+LDFLAGS += -L'external/lib/' 
+LDFLAGS += -L'external/lib/sdl/'
 LDLIBS += -lSDL2 -lSDL2main -lm -lGL -lclew
 
 main: main.o types.o glElements.o clElements.o

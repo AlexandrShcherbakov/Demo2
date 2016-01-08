@@ -3,8 +3,9 @@
 
 #include <stdio.h>
 
-#include "SDL\SDL.h"
+#include "SDL/SDL.h"
 #include "types.h"
+#include "parameters.h"
 
 #include "CL/clew.h"
 
@@ -67,11 +68,16 @@ cl_mem intCLIndices;
 //Reflections of materials
 cl_mem intCLMatReflection;
 
+//Buffer for hammersley distribution
+cl_float2 hammersleyDist[LIGHT_COUNT_ITERATIONS];
+cl_mem hammersleyCLBuf;
+
 ///Kernels
 cl_kernel computeLightEmission;
 cl_kernel convertROFloatToHalf;
 cl_kernel sendRays;
 cl_kernel sendRaysV3;
+cl_kernel sendRaysV4;
 cl_kernel reduceIncident;
 cl_kernel reduceIncidentV2;
 cl_kernel replaceIncident;
