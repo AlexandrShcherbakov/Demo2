@@ -23,7 +23,7 @@
 #include "glElements.h"
 #include "clElements.h"
 
-#define BENCHMARK_MOD
+#define BENCHMARK_MOD1
 
 #ifdef BENCHMARK_MOD
 #define TIMER_START timer=clock();
@@ -93,6 +93,8 @@ void ReadCornellBox() {
 
     //Need to create shadow map
     actualShadowMap = true;
+
+    bright = 0;
 }
 
 //Add buffers and other data to OpenGL
@@ -657,6 +659,11 @@ void ComputeEmission() {
     lightParams[7] = spotLightDirection.z;
 	CHECK_CL(clEnqueueWriteBuffer(clProg, intCLLightParameters, CL_TRUE, 0, sizeof(lightParams), lightParams, 0, NULL, NULL));
 
+	//Add bright
+	float brightExp = (float)exp((double)bright / 5.0);
+	brightExp = bright / 5.0 + 1;
+	CHECK_CL(clSetKernelArg(computeLightEmission, 8, sizeof(brightExp), &brightExp));
+
 	//Capture shadow map texture
     CHECK_CL(clEnqueueAcquireGLObjects(clProg, 1, &clShadowMap, 0, 0, 0));
 
@@ -736,8 +743,8 @@ void ComputeRadiosityOptimizeV3() {
     int reduceSize = patchCount * GR_SIZE;
     int workGroupSize = GR_SIZE;
     TIMER_START
-    CHECK_CL(clEnqueueNDRangeKernel(clProg, sendRaysV4, 1, 0, &reduceSize, &workGroupSize, 0, NULL, &event));
-    CHECK_CL(clWaitForEvents(1, &event));
+    CHECK_CL(clEnqueueNDRangeKernel(clProg, sendRaysV4, 1, 0, &reduceSize, &workGroupSize, 0, NULL, NULL));
+    //CHECK_CL(clWaitForEvents(1, &event));
     TIMER_WATCH("Compute radiosity: ")
 
     CHECK_CL(clEnqueueNDRangeKernel(clProg, interpolation, 1, 0, &patchCount, NULL, 0, NULL, NULL));
@@ -939,6 +946,10 @@ void HandleKeyDown(SDL_Keycode code, bool *quit) {
         viewPoint.z += 0.1;
     } else if (code == SDLK_ESCAPE) {
         *quit = true;
+    } else if (code == SDLK_PLUS || code == SDLK_EQUALS) {
+    	bright++;
+    } else if (code == SDLK_MINUS || code == SDLK_UNDERSCORE) {
+    	bright--;
     }
 }
 
@@ -1061,7 +1072,7 @@ int main(int argc, char* argv[]) {
 	benchmark(window);
 	#endif // BENCHMARK_MOD
 
-	PATCH_COUNT = 12;
+	PATCH_COUNT = 10;
     PrepareOpenGL(window);
     PassCornellBoxDataToGL();
     ReadOrComputeFormFactors();

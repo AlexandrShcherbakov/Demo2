@@ -663,10 +663,10 @@
 	"begin_code.h"
 	"close_code.h"
 
-1452334876 source:d:\dropbox\radiosity\demo2\glelements.c
+1452351959 source:d:\dropbox\radiosity\demo2\glelements.c
 	"glElements.h"
 
-1452334859 d:\dropbox\radiosity\demo2\glelements.h
+1452351959 d:\dropbox\radiosity\demo2\glelements.h
 	<stdio.h>
 	"SDL/SDL.h"
 	"types.h"
@@ -698,7 +698,7 @@
 	<float.h>
 	<stdio.h>
 
-1452282862 d:\dropbox\radiosity\demo2\parameters.h
+1452356744 d:\dropbox\radiosity\demo2\parameters.h
 	"types.h"
 	<stdbool.h>
 	<time.h>
@@ -770,7 +770,7 @@
 1451237142 source:d:\dropbox\radiosity\demo2\clelements.c
 	"clElements.h"
 
-1452337736 d:\dropbox\radiosity\demo2\clelements.h
+1452351956 d:\dropbox\radiosity\demo2\clelements.h
 	<stdio.h>
 	"SDL/SDL.h"
 	"types.h"

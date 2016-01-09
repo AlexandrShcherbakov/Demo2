@@ -36,7 +36,8 @@ __kernel void ComputeLightEmission(__global half* excident,
                                    image2d_t shadowMap,
                                    __global half* reflection,
                                    __constant float2* hammersleyDist,
-                                   const int SAMPLE_ITERS) {
+                                   const int SAMPLE_ITERS,
+                                   const float bright) {
 	int i = get_global_id(0);
 	float16 lightMatrix = *glightMatrix;
     float innerAngle = lightParams[0];
@@ -69,7 +70,7 @@ __kernel void ComputeLightEmission(__global half* excident,
         }
 	}
 	resultEmission /= SAMPLE_ITERS;
-	resultEmission *= square(A, B, C, D) * get_global_size(0) / 15;// * sqrt((float)get_global_size(0)) * 4;
+	resultEmission *= square(A, B, C, D) * get_global_size(0) / 15 * bright;// * sqrt((float)get_global_size(0)) * 4;
     float4 resExc = resultEmission * vload_half4(i, reflection);
 	vstore_half4(resExc, i, excident);
 }

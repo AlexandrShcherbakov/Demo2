@@ -25,6 +25,7 @@ float *formFactors;
 int patchCount;
 int PATCH_COUNT;
 clock_t timer;
+int bright;
 
 //Program parameters
 enum {
