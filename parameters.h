@@ -1,8 +1,9 @@
-#ifndef DEMO2_PARAMETERS
-#define DEMO2_PARAMETERS
-
 #include "types.h"
 #include <stdbool.h>
+#include <time.h>
+
+#ifndef DEMO2_PARAMETERS
+#define DEMO2_PARAMETERS
 
 //Scene parameters
 int polygonCount;
@@ -22,13 +23,14 @@ float spotAngOut;
 bool actualShadowMap;
 float *formFactors;
 int patchCount;
+int PATCH_COUNT;
+clock_t timer;
 
 //Program parameters
 enum {
     SCREEN_WIDTH = 800,
     SCREEN_HEIGHT = 600,
     SHADOWMAP_EDGE = 1024,
-    PATCH_COUNT = 6,
     MONTE_KARLO_ITERATIONS_COUNT = 20,
     LIGHT_COUNT_ITERATIONS = 100,
 };

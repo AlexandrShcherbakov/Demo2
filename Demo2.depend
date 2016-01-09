@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1451960317 source:d:\dropbox\radiosity\demo2\main.c
+1452339121 source:d:\dropbox\radiosity\demo2\main.c
 	"SDL/SDL.h"
 	<stdio.h>
 	<stdbool.h>
@@ -663,10 +663,10 @@
 	"begin_code.h"
 	"close_code.h"
 
-1450982008 source:d:\dropbox\radiosity\demo2\glelements.c
+1452334876 source:d:\dropbox\radiosity\demo2\glelements.c
 	"glElements.h"
 
-1451517735 d:\dropbox\radiosity\demo2\glelements.h
+1452334859 d:\dropbox\radiosity\demo2\glelements.h
 	<stdio.h>
 	"SDL/SDL.h"
 	"types.h"
@@ -698,9 +698,10 @@
 	<float.h>
 	<stdio.h>
 
-1451917573 d:\dropbox\radiosity\demo2\parameters.h
+1452282862 d:\dropbox\radiosity\demo2\parameters.h
 	"types.h"
 	<stdbool.h>
+	<time.h>
 
 1446373458 d:\dropbox\radiosity\gl\wglew.h
 	<windows.h>
@@ -769,9 +770,9 @@
 1451237142 source:d:\dropbox\radiosity\demo2\clelements.c
 	"clElements.h"
 
-1451900173 d:\dropbox\radiosity\demo2\clelements.h
+1452337736 d:\dropbox\radiosity\demo2\clelements.h
 	<stdio.h>
-	"SDL\SDL.h"
+	"SDL/SDL.h"
 	"types.h"
 	"parameters.h"
 	"CL/clew.h"
@@ -1096,8 +1097,8 @@
 	<OpenCL/cl.h>
 	"proxy-opencl/CL/cl.h"
 
-1451517493 d:\dropbox\radiosity\demo2\external\include\cl\proxy-opencl\cl\cl.h
-	"..\..\clew.h"
+1452280902 d:\dropbox\radiosity\demo2\external\include\cl\proxy-opencl\cl\cl.h
+	"../../clew.h"
 
 1450643920 d:\dropbox\radiosity\demo2\external\include\cl\clew.h
 	<AvailabilityMacros.h>

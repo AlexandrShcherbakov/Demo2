@@ -136,7 +136,7 @@ __kernel void SendRaysV4(__global half* excident,
                        __global half* ff,
                        __global half* reflection,
                        __global half* centerIncident) {
-	#define GR_SIZE 512
+	#define GR_SIZE 256
     int gr_id = get_group_id(0);
     int idx = get_local_id(0);
     int size = get_num_groups(0);

@@ -175,6 +175,9 @@ typedef void   (APIENTRY * glGenRenderbuffers_FUNC)        (GLsizei, GLuint *);
 typedef void   (APIENTRY * glBindRenderbuffer_FUNC)        (GLenum, GLuint);
 typedef void   (APIENTRY * glRenderbufferStorage_FUNC)     (GLenum, GLenum, GLsizei, GLsizei);
 typedef void   (APIENTRY * glFramebufferRenderbuffer_FUNC) (GLenum, GLenum, GLenum, GLuint);
+typedef void   (APIENTRY * glDeleteBuffers_FUNC)           (GLsizei, const GLuint *);
+typedef void   (APIENTRY * glDeleteProgram_FUNC)           (GLuint);
+typedef void   (APIENTRY * glDeleteVertexArrays_FUNC)      (GLsizei, const GLuint *);
 
 #ifdef _WIN32
 	typedef void   (APIENTRY * glActiveTexture_FUNC)           (GLenum);
@@ -216,6 +219,9 @@ glGenRenderbuffers_FUNC        glGenRenderbuffers;
 glBindRenderbuffer_FUNC        glBindRenderbuffer;
 glRenderbufferStorage_FUNC     glRenderbufferStorage;
 glFramebufferRenderbuffer_FUNC glFramebufferRenderbuffer;
+glDeleteBuffers_FUNC           glDeleteBuffers;
+glDeleteProgram_FUNC           glDeleteProgram;
+glDeleteVertexArrays_FUNC      glDeleteVertexArrays;
 
 #ifdef _WIN32
 	glActiveTexture_FUNC           glActiveTexture;

@@ -23,6 +23,20 @@
 #include "glElements.h"
 #include "clElements.h"
 
+#define BENCHMARK_MOD
+
+#ifdef BENCHMARK_MOD
+#define TIMER_START timer=clock();
+#else
+#define TIMER_START
+#endif
+
+#ifdef BENCHMARK_MOD
+#define TIMER_WATCH(info) printf("%s:%f\n",info, (float)(clock()-timer) / CLOCKS_PER_SEC);timer=clock();
+#else
+#define TIMER_WATCH(info)
+#endif
+
 
 void ReadCornellBox() {
     //Open file with scene
@@ -446,7 +460,9 @@ void FillCLBuffers() {
 }
 
 void PrepareOpenCL() {
+	#ifndef BENCHMARK_MOD
     clewInit(L"OpenCL.dll");
+    #endif
 
     cl_device_id device_id;             // compute device id
 	cl_platform_id platforms[30];
@@ -464,11 +480,11 @@ void PrepareOpenCL() {
     clGetDeviceInfo(device_id, CL_DEVICE_NAME, 256 * 4, clInfo, NULL);
     printf("%s\n", clInfo);
     size_t sizeInfo;
-    clGetDeviceInfo(device_id, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(sizeInfo), &sizeInfo, &cl_err);
+    clGetDeviceInfo(device_id, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(sizeInfo), &sizeInfo, NULL);
     printf("Max work-group size: %u\n", sizeInfo);
-    clGetDeviceInfo(device_id, CL_DEVICE_GLOBAL_MEM_CACHE_SIZE, sizeof(sizeInfo), &sizeInfo, &cl_err);
+    clGetDeviceInfo(device_id, CL_DEVICE_GLOBAL_MEM_CACHE_SIZE, sizeof(sizeInfo), &sizeInfo, NULL);
     printf("Global cache size: %u\n", sizeInfo);
-    clGetDeviceInfo(device_id, CL_DEVICE_GLOBAL_MEM_CACHELINE_SIZE, sizeof(sizeInfo), &sizeInfo, &cl_err);
+    CHECK_CL(clGetDeviceInfo(device_id, CL_DEVICE_GLOBAL_MEM_CACHELINE_SIZE, sizeof(sizeInfo), &sizeInfo, NULL));
     printf("Global cache line size: %u\n", sizeInfo);
 
     cl_context_properties properties[] = {
@@ -488,7 +504,7 @@ void PrepareOpenCL() {
     LoadSource("kernels/kernel", &KernelSource, &sourceLen);
 
     //Create program
-    cl_program program;
+    //cl_program program;
     program = clCreateProgramWithSource(clContext, 1,
                                         &KernelSource, &sourceLen, &cl_err);     CHECK_CL(cl_err);
     //Compile program
@@ -606,7 +622,10 @@ void PassShadowMap() {
 	glUseProgram(shadowProgram);                                                 CHECK_GL_ERRORS
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);                          CHECK_GL_ERRORS
 	glBindVertexArray(meshVAO);                                                  CHECK_GL_ERRORS
+	TIMER_START
 	glDrawArrays(GL_TRIANGLES, 0, 3 * (ptVerticesCount - 2));                    CHECK_GL_ERRORS
+	glFlush();
+	TIMER_WATCH("Draw shadow map: ")
 
 	GLenum Status = glCheckFramebufferStatus(GL_FRAMEBUFFER);                    CHECK_GL_ERRORS
 	if (Status != GL_FRAMEBUFFER_COMPLETE) {
@@ -642,8 +661,10 @@ void ComputeEmission() {
     CHECK_CL(clEnqueueAcquireGLObjects(clProg, 1, &clShadowMap, 0, 0, 0));
 
 	//Run kernel
+	TIMER_START
 	CHECK_CL(clEnqueueNDRangeKernel(clProg, computeLightEmission, 1, 0, &patchCount, NULL, 0, NULL, NULL));
 	CHECK_CL(clFinish(clProg));
+	TIMER_WATCH("Compute emission: ")
 
     //Free shadow map
     CHECK_CL(clEnqueueReleaseGLObjects(clProg, 1, &clShadowMap, 0, 0, 0));
@@ -707,23 +728,22 @@ void ComputeRadiosityOptimizeV2() {
 void ComputeRadiosityOptimizeV3() {
     CHECK_CL(clEnqueueAcquireGLObjects(clProg, 1, &halfCLIncident, 0, 0, 0));
 
-    cl_event event;
     int sizes[] = {patchCount, patchCount / OPTIMIZE_CONST};
     clock_t tm = clock();
 
+	cl_event event;
 	#define GR_SIZE 256
     int reduceSize = patchCount * GR_SIZE;
     int workGroupSize = GR_SIZE;
+    TIMER_START
     CHECK_CL(clEnqueueNDRangeKernel(clProg, sendRaysV4, 1, 0, &reduceSize, &workGroupSize, 0, NULL, &event));
     CHECK_CL(clWaitForEvents(1, &event));
-    //printf("Compute direct light and reduction: %f\n", (float)(clock() - tm) / CLOCKS_PER_SEC); tm = clock();
-    //printf("Reduction: %f\n", (float)(clock() - tm) / CLOCKS_PER_SEC); tm = clock();
+    TIMER_WATCH("Compute radiosity: ")
 
     CHECK_CL(clEnqueueNDRangeKernel(clProg, interpolation, 1, 0, &patchCount, NULL, 0, NULL, NULL));
+    TIMER_WATCH("Add interpolation: ")
 
 	CHECK_CL(clEnqueueReleaseGLObjects(clProg, 1, &halfCLIncident, 0, 0, 0));
-
-	//printf("Interpolation: %f\n", (float)(clock() - tm) / CLOCKS_PER_SEC); tm = clock();
 }
 
 
@@ -888,7 +908,9 @@ void DrawCornellBox(SDL_Window * window) {
 	//Clear buffers
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);                          CHECK_GL_ERRORS
 
+	TIMER_START
     glDrawArrays(GL_TRIANGLES, 0, 3 * (ptVerticesCount - 2));                    CHECK_GL_ERRORS
+    TIMER_WATCH("Draw scane: ")
     SDL_GL_SwapWindow(window);                                                   CHECK_GL_ERRORS
     glBindVertexArray(0);                                                        CHECK_GL_ERRORS
 }
@@ -929,6 +951,77 @@ void MoveCameraByMouse(SDL_Window * window) {
     SDL_WarpMouseInWindow(window, cX, cY);
 }
 
+void FreeAllElements() {
+    //OpenGL buffers
+    glDeleteBuffers(1, &intGlBufVerticies);
+    glDeleteBuffers(1, &intGLBufNormInds);
+    glDeleteBuffers(1, &intGLRadiosity);
+
+    //OpenGL other elements
+	glDeleteFramebuffers(1, &fbo);
+	glDeleteTextures(1, &shadowMap);
+	glDeleteProgram(shaderProgram);
+	glDeleteProgram(shadowProgram);
+	glDeleteVertexArrays(1, &meshVAO);
+
+	//OpenCL buffers
+	CHECK_CL(clFinish(clProg));
+	CHECK_CL(clReleaseMemObject(intCLFormFactor));
+	CHECK_CL(clReleaseMemObject(halfCLFormFactor));
+	CHECK_CL(clReleaseMemObject(intCLLightMatrix));
+	CHECK_CL(clReleaseMemObject(intCLLightParameters));
+	CHECK_CL(clReleaseMemObject(intCLPatchesPoints));
+	CHECK_CL(clReleaseMemObject(halfCLIncident));
+	CHECK_CL(clReleaseMemObject(halfCLExcident));
+	CHECK_CL(clReleaseMemObject(halfCLReflection));
+	CHECK_CL(clReleaseMemObject(halfCLPreIncident));
+	CHECK_CL(clReleaseMemObject(halfCLCenterIncident));
+	CHECK_CL(clReleaseMemObject(clShadowMap));
+	CHECK_CL(clReleaseMemObject(intCLIndices));
+	CHECK_CL(clReleaseMemObject(intCLMatReflection));
+	CHECK_CL(clReleaseMemObject(hammersleyCLBuf));
+
+
+	//OpenCL other elements
+	CHECK_CL(clReleaseKernel(computeLightEmission));
+	CHECK_CL(clReleaseKernel(convertROFloatToHalf));
+	CHECK_CL(clReleaseKernel(sendRays));
+	CHECK_CL(clReleaseKernel(sendRaysV3));
+	CHECK_CL(clReleaseKernel(sendRaysV4));
+	CHECK_CL(clReleaseKernel(reduceIncident));
+	CHECK_CL(clReleaseKernel(reduceIncidentV2));
+	CHECK_CL(clReleaseKernel(replaceIncident));
+	CHECK_CL(clReleaseKernel(interpolation));
+	CHECK_CL(clReleaseCommandQueue(clProg));
+	CHECK_CL(clReleaseProgram(program));
+	CHECK_CL(clReleaseContext(clContext));
+
+	int refs;
+    //CHECK_CL(clGetProgramInfo(program, CL_PROGRAM_REFERENCE_COUNT, sizeof(refs), &refs, NULL)); printf("Reference:%d\n", refs);
+}
+
+
+void benchmark(window) {
+	clewInit(L"OpenCL.dll");
+	for (int i = 4; i < 20; i += 2) {
+		PATCH_COUNT = i;
+		PrepareOpenGL(window);
+		PassCornellBoxDataToGL();
+		ReadOrComputeFormFactors();
+		PrepareOpenCL();
+
+		SDL_GL_SetSwapInterval(1);
+		SDL_WarpMouseInWindow(window, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
+		SDL_ShowCursor(0);
+
+		//Main loop
+		for (int j = 0; j < 10; ++j) {
+			DrawCornellBox(window);
+		}
+		FreeAllElements();
+	}
+	exit(0);
+}
 
 int main(int argc, char* argv[]) {
     //Pointer to window
@@ -964,6 +1057,11 @@ int main(int argc, char* argv[]) {
     //Variable for events which creates in runtime
     SDL_Event e;
 
+	#ifdef BENCHMARK_MOD
+	benchmark(window);
+	#endif // BENCHMARK_MOD
+
+	PATCH_COUNT = 12;
     PrepareOpenGL(window);
     PassCornellBoxDataToGL();
     ReadOrComputeFormFactors();

@@ -26,7 +26,8 @@ enum {
 cl_command_queue clCommand;
 
 //Program
-cl_program clProg;
+cl_command_queue clProg;
+cl_program program;
 
 //Context
 cl_context clContext;
