@@ -23,7 +23,7 @@
 #include "glElements.h"
 #include "clElements.h"
 
-#define BENCHMARK_MOD
+#define BENCHMARK_MOD1
 
 #ifdef BENCHMARK_MOD
 #define TIMER_START timer=clock();
@@ -1019,7 +1019,12 @@ void FreeAllElements() {
 }
 
 
-void benchmark(SDL_Window *window, char * filename) {
+void benchmark(SDL_Window *window) {
+	struct tm *tim;
+	time_t tt = time(NULL);
+	tim = localtime(&tt);
+	char * filename[1024];
+	sprintf(filename, "benchmark %d-%02d-%02d %02d-%02d-%02d.csv", tim->tm_year + 1900, tim->tm_mon + 1, tim->tm_mday, tim->tm_hour, tim->tm_min, tim->tm_sec);
     benchmark_out = fopen(filename, "w");
     fprintf(benchmark_out, "Patches; Shadow map; Compute emission; Radiosity; Interpolation; Draw scene;\n");
 	clewInit(L"OpenCL.dll");
@@ -1081,7 +1086,7 @@ int main(int argc, char* argv[]) {
     SDL_Event e;
 
 	#ifdef BENCHMARK_MOD
-	benchmark(window, "benchmark.csv");
+	benchmark(window);
 	#endif // BENCHMARK_MOD
 
 	PATCH_COUNT = 10;
