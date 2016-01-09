@@ -22,6 +22,7 @@ uniform vec3 norm[50];
 uniform mat4 camMatrix;
 uniform mat4 lightMatrix;
 uniform Material maters[50];
+uniform float bright;
 
 vec4 gamma(vec4 v) {
     return vec4(pow(v.xyz, vec3(1.0f / 2.2f)), v.w);
@@ -34,9 +35,9 @@ void main(void)
     /*mat.ambient = gamma(maters[v_polInd].ambient);
     mat.diffuse = gamma(maters[v_polInd].diffuse);
     mat.specular = gamma(maters[v_polInd].specular);*/
-    mat.ambient = maters[v_polInd].ambient;
-    mat.diffuse = maters[v_polInd].diffuse;
-    mat.specular = maters[v_polInd].specular;
+    mat.ambient = maters[v_polInd].ambient * bright;
+    mat.diffuse = maters[v_polInd].diffuse * bright;
+    mat.specular = maters[v_polInd].specular * bright;
     mat.shininess = maters[v_polInd].shininess;
     pos = position.xyz;
     posForLight = lightMatrix * vec4(position.xyz, 1.0);

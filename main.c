@@ -94,7 +94,8 @@ void ReadCornellBox() {
     //Need to create shadow map
     actualShadowMap = true;
 
-    bright = 0;
+    indirectBright = 1;
+    directBright = 1;
 }
 
 //Add buffers and other data to OpenGL
@@ -239,6 +240,7 @@ void ChangeUniforms() {
 	glUseProgram(shaderProgram);
 	//Update spot light direction
 	SetUniform3f(shaderProgram, "lg.spotDirection", spotLightDirection);
+	SetUniform1f(shaderProgram, "bright", directBright);
 
 	SetStandartCamera();
 	glUseProgram(0);
@@ -660,9 +662,7 @@ void ComputeEmission() {
 	CHECK_CL(clEnqueueWriteBuffer(clProg, intCLLightParameters, CL_TRUE, 0, sizeof(lightParams), lightParams, 0, NULL, NULL));
 
 	//Add bright
-	float brightExp = (float)exp((double)bright / 5.0);
-	brightExp = bright / 5.0 + 1;
-	CHECK_CL(clSetKernelArg(computeLightEmission, 8, sizeof(brightExp), &brightExp));
+	CHECK_CL(clSetKernelArg(computeLightEmission, 8, sizeof(indirectBright), &indirectBright));
 
 	//Capture shadow map texture
     CHECK_CL(clEnqueueAcquireGLObjects(clProg, 1, &clShadowMap, 0, 0, 0));
@@ -947,9 +947,15 @@ void HandleKeyDown(SDL_Keycode code, bool *quit) {
     } else if (code == SDLK_ESCAPE) {
         *quit = true;
     } else if (code == SDLK_PLUS || code == SDLK_EQUALS) {
-    	bright++;
+    	indirectBright += 0.2;
     } else if (code == SDLK_MINUS || code == SDLK_UNDERSCORE) {
-    	bright--;
+    	indirectBright -= 0.2;
+    	if (indirectBright < 0) indirectBright = 0;
+    } else if (code == SDLK_LEFTBRACKET) {
+    	directBright -= 0.2;
+    	if (directBright < 0) directBright = 0;
+    } else if (code == SDLK_RIGHTBRACKET) {
+    	directBright += 0.2;
     }
 }
 
