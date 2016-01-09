@@ -1,6 +1,7 @@
 #include "types.h"
 #include <stdbool.h>
 #include <time.h>
+#include <stdio.h>
 
 #ifndef DEMO2_PARAMETERS
 #define DEMO2_PARAMETERS
@@ -27,6 +28,7 @@ int PATCH_COUNT;
 clock_t timer;
 float indirectBright;
 float directBright;
+FILE * benchmark_out;
 
 //Program parameters
 enum {

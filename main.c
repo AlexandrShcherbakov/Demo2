@@ -23,7 +23,7 @@
 #include "glElements.h"
 #include "clElements.h"
 
-#define BENCHMARK_MOD1
+#define BENCHMARK_MOD
 
 #ifdef BENCHMARK_MOD
 #define TIMER_START timer=clock();
@@ -32,7 +32,7 @@
 #endif
 
 #ifdef BENCHMARK_MOD
-#define TIMER_WATCH(info) printf("%s:%f\n",info, (float)(clock()-timer) / CLOCKS_PER_SEC);timer=clock();
+#define TIMER_WATCH(info) fprintf(benchmark_out, "%f; ", (float)(clock()-timer) / CLOCKS_PER_SEC);timer=clock();
 #else
 #define TIMER_WATCH(info)
 #endif
@@ -92,7 +92,7 @@ void ReadCornellBox() {
     spotAngOut = 45.0f;
 
     //Need to create shadow map
-    actualShadowMap = true;
+    actualShadowMap = false;
 
     indirectBright = 1;
     directBright = 1;
@@ -745,6 +745,7 @@ void ComputeRadiosityOptimizeV3() {
     TIMER_START
     CHECK_CL(clEnqueueNDRangeKernel(clProg, sendRaysV4, 1, 0, &reduceSize, &workGroupSize, 0, NULL, NULL));
     //CHECK_CL(clWaitForEvents(1, &event));
+    CHECK_CL(clFinish(clProg));
     TIMER_WATCH("Compute radiosity: ")
 
     CHECK_CL(clEnqueueNDRangeKernel(clProg, interpolation, 1, 0, &patchCount, NULL, 0, NULL, NULL));
@@ -917,7 +918,7 @@ void DrawCornellBox(SDL_Window * window) {
 
 	TIMER_START
     glDrawArrays(GL_TRIANGLES, 0, 3 * (ptVerticesCount - 2));                    CHECK_GL_ERRORS
-    TIMER_WATCH("Draw scane: ")
+    TIMER_WATCH("Draw scene: ")
     SDL_GL_SwapWindow(window);                                                   CHECK_GL_ERRORS
     glBindVertexArray(0);                                                        CHECK_GL_ERRORS
 }
@@ -1018,7 +1019,9 @@ void FreeAllElements() {
 }
 
 
-void benchmark(window) {
+void benchmark(SDL_Window *window, char * filename) {
+    benchmark_out = fopen(filename, "w");
+    fprintf(benchmark_out, "Patches; Shadow map; Compute emission; Radiosity; Interpolation; Draw scene;\n");
 	clewInit(L"OpenCL.dll");
 	for (int i = 4; i < 20; i += 2) {
 		PATCH_COUNT = i;
@@ -1028,15 +1031,18 @@ void benchmark(window) {
 		PrepareOpenCL();
 
 		SDL_GL_SetSwapInterval(1);
-		SDL_WarpMouseInWindow(window, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
+		//SDL_WarpMouseInWindow(window, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
 		SDL_ShowCursor(0);
 
 		//Main loop
-		for (int j = 0; j < 10; ++j) {
+		for (int j = 0; j < 30; ++j) {
+			fprintf(benchmark_out, "%d; ", patchCount);
 			DrawCornellBox(window);
+			fprintf(benchmark_out, "\n");
 		}
 		FreeAllElements();
 	}
+	fclose(benchmark_out);
 	exit(0);
 }
 
@@ -1075,7 +1081,7 @@ int main(int argc, char* argv[]) {
     SDL_Event e;
 
 	#ifdef BENCHMARK_MOD
-	benchmark(window);
+	benchmark(window, "benchmark.csv");
 	#endif // BENCHMARK_MOD
 
 	PATCH_COUNT = 10;
