@@ -23,8 +23,8 @@
 #include "glElements.h"
 #include "clElements.h"
 
-#define BENCHMARK_MOD1
-#define BENCHMARK_SCREEN_OUT
+#define BENCHMARK_MOD
+#define BENCHMARK_SCREEN_OUT1
 
 #ifdef BENCHMARK_MOD
 #define TIMER_START timer=clock();
@@ -835,6 +835,33 @@ void ComputeRadiosityOptimizeV5() {
 	CHECK_CL(clEnqueueReleaseGLObjects(clProg, 1, &halfCLIncident, 0, 0, 0));
 }
 
+void ComputeRadiosityOptimizeV6() {
+    CHECK_CL(clEnqueueAcquireGLObjects(clProg, 1, &halfCLIncident, 0, 0, 0));
+
+    clock_t tm = clock();
+
+	cl_event event;
+    int reduceSize = (patchCount / GR_SIZE + (patchCount % GR_SIZE ? 1: 0)) * GR_SIZE;
+    int workGroupSize = GR_SIZE;
+    TIMER_START
+    CHECK_CL(clEnqueueNDRangeKernel(clProg, sendRaysV6, 1, 0, &reduceSize, &workGroupSize, 0, NULL, NULL));
+    CHECK_CL(clFinish(clProg));
+    TIMER_WATCH("Compute radiosity: ")
+    reduceSize = GR_SIZE / (reduceSize / GR_SIZE);
+    //printf("%d\n", reduceSize);
+    reduceSize = (patchCount / reduceSize + (patchCount % reduceSize ? 1 : 0)) * GR_SIZE;
+    //reduceSize = (reduceSize / GR_SIZE + (reduceSize % GR_SIZE ? 1: 0)) * GR_SIZE;
+    //printf("%d", reduceSize);
+    CHECK_CL(clEnqueueNDRangeKernel(clProg, reduceIncidentV4, 1, 0, &reduceSize, &workGroupSize, 0, NULL, NULL));
+    CHECK_CL(clFinish(clProg));
+    TIMER_WATCH("Reduce incident: ")
+
+    CHECK_CL(clEnqueueNDRangeKernel(clProg, interpolation, 1, 0, &patchCount, NULL, 0, NULL, NULL));
+    TIMER_WATCH("Add interpolation: ")
+
+	CHECK_CL(clEnqueueReleaseGLObjects(clProg, 1, &halfCLIncident, 0, 0, 0));
+}
+
 
 void GenerateHammersleyForLightCount() {
     for (int i = 0; i < LIGHT_COUNT_ITERATIONS; ++i) {
@@ -984,7 +1011,7 @@ void DrawCornellBox(SDL_Window * window) {
 		SetStandartCamera();
 		ComputeEmission();
 		//ComputeRadiosity();
-		ComputeRadiosityOptimizeV5();
+		ComputeRadiosityOptimizeV6();
 		//actualShadowMap = true;
 
 	}
@@ -1129,7 +1156,7 @@ void benchmark(SDL_Window *window) {
     fprintf(benchmark_out, "Patches; Shadow map; Compute emission; Radiosity; Interpolation; Draw scene;\n");
     #endif
 	clewInit(L"OpenCL.dll");
-	for (int i = 4; i <= 16; i += 2) {
+	for (int i = 4; i <= 24; i += 2) {
 		PATCH_COUNT = i;
 		PrepareOpenGL(window);
 		PassCornellBoxDataToGL();
