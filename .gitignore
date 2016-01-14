@@ -55,8 +55,6 @@ main
 *.o
 ff/
 Out version*
-ff_3528
-ff_4608
-ff_5832
-benchmark *
+ff_*
+benchmark*
 benchmark.xlsx

@@ -1,4 +1,5 @@
 #pragma OPENCL EXTENSION cl_khr_fp16 : enable
+#define GR_SIZE 256
 
 //#define SAMPLE_ITERS 20
 
@@ -133,11 +134,131 @@ __kernel void SendRaysV3(__global half* excident,
     vstore_half4(inc, i * get_global_size(1) + i1, preincident);
 }
 
+__kernel void SendRaysV5(__global half* excident,
+                       __global half* ff,
+                       __global half* preincident,
+                       const int len) {
+    int id = get_local_id(0);
+    int group = get_group_id(0);
+    __local float4 inc[GR_SIZE];
+
+    inc[id] = make_float4(0, 0, 0, 0);
+    int newRowLen = (len / GR_SIZE) + (len % GR_SIZE ? 1 : 0);
+    int oldRow = get_global_id(0) / (newRowLen * 256);
+    int oldCol = get_global_id(0) % (newRowLen * 256);
+    int newCol = oldCol / GR_SIZE;
+    if (oldCol < len) {
+        inc[id] = vload_half4(oldCol, excident) * vload_half(oldRow * len + oldCol, ff);
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    for (int i = GR_SIZE / 2; i > 0; i >>= 1) {
+        if (id < i) {
+            inc[id] += inc[id + i];
+        }
+        barrier(CLK_LOCAL_MEM_FENCE);
+    }
+    if (id == 0) {
+        vstore_half4(inc[0], oldRow * newRowLen + newCol, preincident);
+    }
+}
+
+__kernel void SendRaysV6(__global half* excident,
+                       __global half* ff,
+                       __global half* preincident,
+                       const int len) {
+    int id = get_local_id(0);
+    int group = get_group_id(0);
+    __local float4 exc[GR_SIZE];
+    __local float4 inc[GR_SIZE];
+
+    exc[id] = make_float4(0, 0, 0, 0);
+    inc[id] = make_float4(0, 0, 0, 0);
+    int newRowLen = (len / GR_SIZE) + (len % GR_SIZE ? 1 : 0);
+    int oldCol = get_global_id(0);
+    int newCol = oldCol / GR_SIZE;
+    if (oldCol < len) {
+		exc[id] = vload_half4(oldCol, excident);
+	}
+    for (int row = 0; row < len; ++row) {
+		if (oldCol < len) {
+			inc[id] = exc[id] * vload_half(oldCol + len * row, ff);
+		}
+		barrier(CLK_LOCAL_MEM_FENCE);
+
+		for (int i = GR_SIZE / 2; i > 0; i >>= 1) {
+			if (id < i) {
+				inc[id] += inc[id + i];
+			}
+			barrier(CLK_LOCAL_MEM_FENCE);
+		}
+		if (id == 0) {
+			vstore_half4(inc[0], row * newRowLen + newCol, preincident);
+		}
+		barrier(CLK_LOCAL_MEM_FENCE);
+    }
+}
+
+
+__kernel void ReduceIncidentV3(__global half* preincident,
+                               __global half* reflection,
+                               __global half* centerIncident,
+                               const int len) {
+    __local float4 inc[GR_SIZE];
+    int col = get_local_id(0);
+    int row = get_group_id(0);
+    inc[col] = make_float4(0, 0, 0, 0);
+    if (col < len) {
+        inc[col] = vload_half4(row * len + col, preincident);
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+    for (int i = GR_SIZE / 2; i > 0; i >>= 1) {
+        if (col < i) {
+            inc[col] += inc[col + i];
+        }
+        barrier(CLK_LOCAL_MEM_FENCE);
+    }
+    if (col != 0) {
+        return;
+    }
+    vstore_half4(vload_half4(row, reflection) * inc[0], row, centerIncident);
+}
+
+
+__kernel void ReduceIncidentV4(__global half* preincident,
+                               __global half* reflection,
+                               __global half* centerIncident,
+                               const int len) {
+    __local float4 inc[GR_SIZE];
+    int col = get_local_id(0) % len;
+    int len2 = 1;
+    while (len2 < len) len2 <<= 1;
+    int rowsInGroup = GR_SIZE / len2;
+    int row = get_local_id(0) / len2 + get_group_id(0) * rowsInGroup;
+    int numInGroup = get_local_id(0) / len2;
+    inc[numInGroup * len2 + col] = make_float4(0, 0, 0, 0);
+    //printf("%d %d %d %d %d\n", row, numInGroup, rowsInGroup, len, len2);
+    if (col < len) {
+        inc[numInGroup * len2 + col] = vload_half4(numInGroup * len + col, preincident);
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+    for (int i = len2 / 2; i > 0; i >>= 1) {
+        if (col < i) {
+            inc[numInGroup * len2 + col] += inc[numInGroup * len2 + col + i];
+        }
+        barrier(CLK_LOCAL_MEM_FENCE);
+    }
+    if (col != 0) {
+        return;
+    }
+    vstore_half4(vload_half4(row, reflection) * inc[numInGroup * len2 + col], row, centerIncident);
+}
+
+
 __kernel void SendRaysV4(__global half* excident,
                        __global half* ff,
                        __global half* reflection,
                        __global half* centerIncident) {
-	#define GR_SIZE 256
     int gr_id = get_group_id(0);
     int idx = get_local_id(0);
     int size = get_num_groups(0);

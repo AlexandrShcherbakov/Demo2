@@ -24,6 +24,7 @@
 #include "clElements.h"
 
 #define BENCHMARK_MOD1
+#define BENCHMARK_SCREEN_OUT
 
 #ifdef BENCHMARK_MOD
 #define TIMER_START timer=clock();
@@ -32,10 +33,16 @@
 #endif
 
 #ifdef BENCHMARK_MOD
+#ifdef BENCHMARK_SCREEN_OUT
+#define TIMER_WATCH(info) printf("%s%f\n", info,(float)(clock()-timer) / CLOCKS_PER_SEC);timer=clock();
+#else
 #define TIMER_WATCH(info) fprintf(benchmark_out, "%f; ", (float)(clock()-timer) / CLOCKS_PER_SEC);timer=clock();
+#endif // BENCHMARK_SCREEN_OUT
 #else
 #define TIMER_WATCH(info)
 #endif
+
+#define GR_SIZE 256
 
 
 void ReadCornellBox() {
@@ -342,6 +349,18 @@ void PrepareCLKernels(cl_program program) {
     CHECK_CL(clSetKernelArg(sendRaysV3, 1, sizeof(halfCLFormFactor), &halfCLFormFactor));
     CHECK_CL(clSetKernelArg(sendRaysV3, 2, sizeof(halfCLPreIncident), &halfCLPreIncident));
 
+    sendRaysV5 = clCreateKernel(program, "SendRaysV5", &cl_err);                 CHECK_CL(cl_err);
+    CHECK_CL(clSetKernelArg(sendRaysV5, 0, sizeof(halfCLExcident), &halfCLExcident));
+    CHECK_CL(clSetKernelArg(sendRaysV5, 1, sizeof(halfCLFormFactor), &halfCLFormFactor));
+    CHECK_CL(clSetKernelArg(sendRaysV5, 2, sizeof(halfCLPreIncident), &halfCLPreIncident));
+    CHECK_CL(clSetKernelArg(sendRaysV5, 3, sizeof(patchCount), &patchCount));
+
+    sendRaysV6 = clCreateKernel(program, "SendRaysV6", &cl_err);                 CHECK_CL(cl_err);
+    CHECK_CL(clSetKernelArg(sendRaysV6, 0, sizeof(halfCLExcident), &halfCLExcident));
+    CHECK_CL(clSetKernelArg(sendRaysV6, 1, sizeof(halfCLFormFactor), &halfCLFormFactor));
+    CHECK_CL(clSetKernelArg(sendRaysV6, 2, sizeof(halfCLPreIncident), &halfCLPreIncident));
+    CHECK_CL(clSetKernelArg(sendRaysV6, 3, sizeof(patchCount), &patchCount));
+
     cl_int optimSize = patchCount / OPTIMIZE_CONST;
 
     reduceIncident = clCreateKernel(program, "ReduceIncident", &cl_err);         CHECK_CL(cl_err);
@@ -365,6 +384,19 @@ void PrepareCLKernels(cl_program program) {
     CHECK_CL(clSetKernelArg(reduceIncidentV2, 1, sizeof(halfCLReflection), &halfCLReflection));
     CHECK_CL(clSetKernelArg(reduceIncidentV2, 2, sizeof(halfCLCenterIncident), &halfCLCenterIncident));
     CHECK_CL(clSetKernelArg(reduceIncidentV2, 3, sizeof(optimSize), &optimSize));
+
+    int redV3size = patchCount / GR_SIZE + (patchCount % GR_SIZE ? 1 : 0);
+    reduceIncidentV3 = clCreateKernel(program, "ReduceIncidentV3", &cl_err);     CHECK_CL(cl_err);
+    CHECK_CL(clSetKernelArg(reduceIncidentV3, 0, sizeof(halfCLPreIncident), &halfCLPreIncident));
+    CHECK_CL(clSetKernelArg(reduceIncidentV3, 1, sizeof(halfCLReflection), &halfCLReflection));
+    CHECK_CL(clSetKernelArg(reduceIncidentV3, 2, sizeof(halfCLCenterIncident), &halfCLCenterIncident));
+    CHECK_CL(clSetKernelArg(reduceIncidentV3, 3, sizeof(redV3size), &redV3size));
+
+	reduceIncidentV4 = clCreateKernel(program, "ReduceIncidentV4", &cl_err);     CHECK_CL(cl_err);
+    CHECK_CL(clSetKernelArg(reduceIncidentV4, 0, sizeof(halfCLPreIncident), &halfCLPreIncident));
+    CHECK_CL(clSetKernelArg(reduceIncidentV4, 1, sizeof(halfCLReflection), &halfCLReflection));
+    CHECK_CL(clSetKernelArg(reduceIncidentV4, 2, sizeof(halfCLCenterIncident), &halfCLCenterIncident));
+    CHECK_CL(clSetKernelArg(reduceIncidentV4, 3, sizeof(redV3size), &redV3size));
 
     sendRaysV4 = clCreateKernel(program, "SendRaysV4", &cl_err);                 CHECK_CL(cl_err);
     CHECK_CL(clSetKernelArg(sendRaysV4, 0, sizeof(halfCLExcident), &halfCLExcident));
@@ -739,7 +771,6 @@ void ComputeRadiosityOptimizeV3() {
     clock_t tm = clock();
 
 	cl_event event;
-	#define GR_SIZE 256
     int reduceSize = patchCount * GR_SIZE;
     int workGroupSize = GR_SIZE;
     TIMER_START
@@ -754,6 +785,55 @@ void ComputeRadiosityOptimizeV3() {
 	CHECK_CL(clEnqueueReleaseGLObjects(clProg, 1, &halfCLIncident, 0, 0, 0));
 }
 
+
+void ComputeRadiosityOptimizeV4() {
+    CHECK_CL(clEnqueueAcquireGLObjects(clProg, 1, &halfCLIncident, 0, 0, 0));
+
+    clock_t tm = clock();
+
+	cl_event event;
+    int reduceSize = patchCount * (patchCount / GR_SIZE + (patchCount % GR_SIZE ? 1: 0)) * GR_SIZE;
+    int workGroupSize = GR_SIZE;
+    TIMER_START
+    CHECK_CL(clEnqueueNDRangeKernel(clProg, sendRaysV5, 1, 0, &reduceSize, &workGroupSize, 0, NULL, NULL));
+    CHECK_CL(clFinish(clProg));
+    TIMER_WATCH("Compute radiosity: ")
+    reduceSize = patchCount * GR_SIZE;
+    CHECK_CL(clEnqueueNDRangeKernel(clProg, reduceIncidentV3, 1, 0, &reduceSize, &workGroupSize, 0, NULL, NULL));
+    CHECK_CL(clFinish(clProg));
+    TIMER_WATCH("Reduce incident: ")
+
+    CHECK_CL(clEnqueueNDRangeKernel(clProg, interpolation, 1, 0, &patchCount, NULL, 0, NULL, NULL));
+    TIMER_WATCH("Add interpolation: ")
+
+	CHECK_CL(clEnqueueReleaseGLObjects(clProg, 1, &halfCLIncident, 0, 0, 0));
+}
+
+
+void ComputeRadiosityOptimizeV5() {
+    CHECK_CL(clEnqueueAcquireGLObjects(clProg, 1, &halfCLIncident, 0, 0, 0));
+
+    clock_t tm = clock();
+
+	cl_event event;
+    int reduceSize = (patchCount / GR_SIZE + (patchCount % GR_SIZE ? 1: 0)) * GR_SIZE;
+    int workGroupSize = GR_SIZE;
+    TIMER_START
+    CHECK_CL(clEnqueueNDRangeKernel(clProg, sendRaysV6, 1, 0, &reduceSize, &workGroupSize, 0, NULL, NULL));
+    CHECK_CL(clFinish(clProg));
+    TIMER_WATCH("Compute radiosity: ")
+    reduceSize = patchCount * GR_SIZE;
+    //reduceSize = (reduceSize / GR_SIZE + (reduceSize % GR_SIZE ? 1: 0)) * GR_SIZE;
+    //printf("%d", reduceSize);
+    CHECK_CL(clEnqueueNDRangeKernel(clProg, reduceIncidentV3, 1, 0, &reduceSize, &workGroupSize, 0, NULL, NULL));
+    CHECK_CL(clFinish(clProg));
+    TIMER_WATCH("Reduce incident: ")
+
+    CHECK_CL(clEnqueueNDRangeKernel(clProg, interpolation, 1, 0, &patchCount, NULL, 0, NULL, NULL));
+    TIMER_WATCH("Add interpolation: ")
+
+	CHECK_CL(clEnqueueReleaseGLObjects(clProg, 1, &halfCLIncident, 0, 0, 0));
+}
 
 
 void GenerateHammersleyForLightCount() {
@@ -904,7 +984,7 @@ void DrawCornellBox(SDL_Window * window) {
 		SetStandartCamera();
 		ComputeEmission();
 		//ComputeRadiosity();
-		ComputeRadiosityOptimizeV3();
+		ComputeRadiosityOptimizeV5();
 		//actualShadowMap = true;
 
 	}
@@ -1006,20 +1086,40 @@ void FreeAllElements() {
 	CHECK_CL(clReleaseKernel(sendRays));
 	CHECK_CL(clReleaseKernel(sendRaysV3));
 	CHECK_CL(clReleaseKernel(sendRaysV4));
+	CHECK_CL(clReleaseKernel(sendRaysV5));
+	CHECK_CL(clReleaseKernel(sendRaysV6));
 	CHECK_CL(clReleaseKernel(reduceIncident));
 	CHECK_CL(clReleaseKernel(reduceIncidentV2));
+	CHECK_CL(clReleaseKernel(reduceIncidentV3));
+	CHECK_CL(clReleaseKernel(reduceIncidentV4));
 	CHECK_CL(clReleaseKernel(replaceIncident));
 	CHECK_CL(clReleaseKernel(interpolation));
 	CHECK_CL(clReleaseCommandQueue(clProg));
 	CHECK_CL(clReleaseProgram(program));
 	CHECK_CL(clReleaseContext(clContext));
 
-	int refs;
-    //CHECK_CL(clGetProgramInfo(program, CL_PROGRAM_REFERENCE_COUNT, sizeof(refs), &refs, NULL)); printf("Reference:%d\n", refs);
+	//Buffers
+    free(indirectPart);
+	free(extGLBufVertices);
+	free(extGLBufAmbCol);
+	free(extGLBufDifCol);
+	free(extGLBufSpcCol);
+	free(extGLBufNormInds);
+	for (int i = 0; i < polygonCount; ++i) {
+        for (int j = 0; j < pt_scene[i].axis1 * pt_scene[i].axis2; ++j) {
+            free(pt_scene[i].patches[j].vertices);
+        }
+        free(pt_scene[i].patches);
+        free(scene[i].vertices);
+	}
+	free(pt_scene);
+	free(scene);
+	free(formFactors);
 }
 
 
 void benchmark(SDL_Window *window) {
+	#ifndef BENCHMARK_SCREEN_OUT
 	struct tm *tim;
 	time_t tt = time(NULL);
 	tim = localtime(&tt);
@@ -1027,8 +1127,9 @@ void benchmark(SDL_Window *window) {
 	sprintf(filename, "benchmark %d-%02d-%02d %02d-%02d-%02d.csv", tim->tm_year + 1900, tim->tm_mon + 1, tim->tm_mday, tim->tm_hour, tim->tm_min, tim->tm_sec);
     benchmark_out = fopen(filename, "w");
     fprintf(benchmark_out, "Patches; Shadow map; Compute emission; Radiosity; Interpolation; Draw scene;\n");
+    #endif
 	clewInit(L"OpenCL.dll");
-	for (int i = 4; i < 20; i += 2) {
+	for (int i = 4; i <= 16; i += 2) {
 		PATCH_COUNT = i;
 		PrepareOpenGL(window);
 		PassCornellBoxDataToGL();
@@ -1041,13 +1142,19 @@ void benchmark(SDL_Window *window) {
 
 		//Main loop
 		for (int j = 0; j < 30; ++j) {
+			#ifndef BENCHMARK_SCREEN_OUT
 			fprintf(benchmark_out, "%d; ", patchCount);
+			#endif // BENCHMARK_SCREEN_OUT
 			DrawCornellBox(window);
+			#ifndef BENCHMARK_SCREEN_OUT
 			fprintf(benchmark_out, "\n");
+			#endif
 		}
 		FreeAllElements();
 	}
+	#ifndef BENCHMARK_SCREEN_OUT
 	fclose(benchmark_out);
+	#endif // BENCHMARK_SCREEN_OUT
 	exit(0);
 }
 
@@ -1112,7 +1219,7 @@ int main(int argc, char* argv[]) {
         MoveCameraByMouse(window);
         DrawCornellBox(window);
         static int t = 0;
-        //if (t) exit(0);
+        //if (t == 0) exit(0);
         t++;
     }
     //Destroy window and release resources
