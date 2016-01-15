@@ -95,7 +95,7 @@ __kernel void FloatToHalfROBuffers(__global float* formFactors,
 __kernel void SendRays(__global half* excident,
                        __global half* ff,
                        __global half* reflection,
-                       __global half* incident) {
+                       __global half* centralIncident) {
     int i = get_global_id(0);
     int j;
     int size = get_global_size(0);
@@ -109,9 +109,10 @@ __kernel void SendRays(__global half* excident,
 		inc += magicMult(exc, f);
     }
     inc = inc * vload_half4(i, reflection);
-    for (j = 0; j < 6; ++j) {
+    vstore_half4(inc, i, centralIncident);
+    /*for (j = 0; j < 6; ++j) {
         vstore_half4(inc, 6 * i + j, incident);
-    }
+    }*/
 }
 
 
@@ -144,8 +145,8 @@ __kernel void SendRaysV5(__global half* excident,
 
     inc[id] = make_float4(0, 0, 0, 0);
     int newRowLen = (len / GR_SIZE) + (len % GR_SIZE ? 1 : 0);
-    int oldRow = get_global_id(0) / (newRowLen * 256);
-    int oldCol = get_global_id(0) % (newRowLen * 256);
+    int oldRow = get_global_id(0) / (newRowLen * GR_SIZE);
+    int oldCol = get_global_id(0) % (newRowLen * GR_SIZE);
     int newCol = oldCol / GR_SIZE;
     if (oldCol < len) {
         inc[id] = vload_half4(oldCol, excident) * vload_half(oldRow * len + oldCol, ff);

@@ -23,7 +23,7 @@
 #include "glElements.h"
 #include "clElements.h"
 
-#define BENCHMARK_MOD
+#define BENCHMARK_MOD1
 #define BENCHMARK_SCREEN_OUT1
 
 #ifdef BENCHMARK_MOD
@@ -342,7 +342,7 @@ void PrepareCLKernels(cl_program program) {
     CHECK_CL(clSetKernelArg(sendRays, 0, sizeof(halfCLExcident), &halfCLExcident));
     CHECK_CL(clSetKernelArg(sendRays, 1, sizeof(halfCLFormFactor), &halfCLFormFactor));
     CHECK_CL(clSetKernelArg(sendRays, 2, sizeof(halfCLReflection), &halfCLReflection));
-    CHECK_CL(clSetKernelArg(sendRays, 3, sizeof(halfCLIncident), &halfCLIncident));
+    CHECK_CL(clSetKernelArg(sendRays, 3, sizeof(halfCLCenterIncident), &halfCLCenterIncident));
 
     sendRaysV3 = clCreateKernel(program, "SendRaysV3", &cl_err);                 CHECK_CL(cl_err);
     CHECK_CL(clSetKernelArg(sendRaysV3, 0, sizeof(halfCLExcident), &halfCLExcident));
@@ -715,8 +715,14 @@ void ComputeEmission() {
 void ComputeRadiosity() {
     CHECK_CL(clEnqueueAcquireGLObjects(clProg, 1, &halfCLIncident, 0, 0, 0));
 
+	TIMER_START
     CHECK_CL(clEnqueueNDRangeKernel(clProg, sendRays, 1, 0, &patchCount, NULL, 0, NULL, NULL));
 	CHECK_CL(clFinish(clProg));
+	TIMER_WATCH("Compute radiosity: ")
+
+	CHECK_CL(clEnqueueNDRangeKernel(clProg, interpolation, 1, 0, &patchCount, NULL, 0, NULL, NULL));
+	CHECK_CL(clFinish(clProg));
+    TIMER_WATCH("Add interpolation: ")
 
 	CHECK_CL(clEnqueueReleaseGLObjects(clProg, 1, &halfCLIncident, 0, 0, 0));
 }
@@ -780,6 +786,7 @@ void ComputeRadiosityOptimizeV3() {
     TIMER_WATCH("Compute radiosity: ")
 
     CHECK_CL(clEnqueueNDRangeKernel(clProg, interpolation, 1, 0, &patchCount, NULL, 0, NULL, NULL));
+    CHECK_CL(clFinish(clProg));
     TIMER_WATCH("Add interpolation: ")
 
 	CHECK_CL(clEnqueueReleaseGLObjects(clProg, 1, &halfCLIncident, 0, 0, 0));
@@ -804,6 +811,7 @@ void ComputeRadiosityOptimizeV4() {
     TIMER_WATCH("Reduce incident: ")
 
     CHECK_CL(clEnqueueNDRangeKernel(clProg, interpolation, 1, 0, &patchCount, NULL, 0, NULL, NULL));
+    CHECK_CL(clFinish(clProg));
     TIMER_WATCH("Add interpolation: ")
 
 	CHECK_CL(clEnqueueReleaseGLObjects(clProg, 1, &halfCLIncident, 0, 0, 0));
@@ -830,6 +838,7 @@ void ComputeRadiosityOptimizeV5() {
     TIMER_WATCH("Reduce incident: ")
 
     CHECK_CL(clEnqueueNDRangeKernel(clProg, interpolation, 1, 0, &patchCount, NULL, 0, NULL, NULL));
+    CHECK_CL(clFinish(clProg));
     TIMER_WATCH("Add interpolation: ")
 
 	CHECK_CL(clEnqueueReleaseGLObjects(clProg, 1, &halfCLIncident, 0, 0, 0));
@@ -857,6 +866,7 @@ void ComputeRadiosityOptimizeV6() {
     TIMER_WATCH("Reduce incident: ")
 
     CHECK_CL(clEnqueueNDRangeKernel(clProg, interpolation, 1, 0, &patchCount, NULL, 0, NULL, NULL));
+    CHECK_CL(clFinish(clProg));
     TIMER_WATCH("Add interpolation: ")
 
 	CHECK_CL(clEnqueueReleaseGLObjects(clProg, 1, &halfCLIncident, 0, 0, 0));
@@ -1011,7 +1021,7 @@ void DrawCornellBox(SDL_Window * window) {
 		SetStandartCamera();
 		ComputeEmission();
 		//ComputeRadiosity();
-		ComputeRadiosityOptimizeV6();
+		ComputeRadiosityOptimizeV5();
 		//actualShadowMap = true;
 
 	}
