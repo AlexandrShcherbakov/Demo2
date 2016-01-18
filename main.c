@@ -856,11 +856,14 @@ void ComputeRadiosityOptimizeV6() {
     CHECK_CL(clEnqueueNDRangeKernel(clProg, sendRaysV6, 1, 0, &reduceSize, &workGroupSize, 0, NULL, NULL));
     CHECK_CL(clFinish(clProg));
     TIMER_WATCH("Compute radiosity: ")
+    printf("%d %d\n", reduceSize, patchCount);
     reduceSize = GR_SIZE / (reduceSize / GR_SIZE);
-    //printf("%d\n", reduceSize);
-    reduceSize = (patchCount / reduceSize + (patchCount % reduceSize ? 1 : 0)) * GR_SIZE;
+    int len2 = 1;
+    while (len2 < reduceSize) len2 <<= 1;
+    printf("%d\n", reduceSize);
+    reduceSize = (patchCount / len2 + (patchCount % len2 ? 1 : 0)) * GR_SIZE;
     //reduceSize = (reduceSize / GR_SIZE + (reduceSize % GR_SIZE ? 1: 0)) * GR_SIZE;
-    //printf("%d", reduceSize);
+    printf("%d\n", reduceSize);
     CHECK_CL(clEnqueueNDRangeKernel(clProg, reduceIncidentV4, 1, 0, &reduceSize, &workGroupSize, 0, NULL, NULL));
     CHECK_CL(clFinish(clProg));
     TIMER_WATCH("Reduce incident: ")
@@ -1233,7 +1236,7 @@ int main(int argc, char* argv[]) {
 	benchmark(window);
 	#endif // BENCHMARK_MOD
 
-	PATCH_COUNT = 10;
+	PATCH_COUNT = 8;
     PrepareOpenGL(window);
     PassCornellBoxDataToGL();
     ReadOrComputeFormFactors();
