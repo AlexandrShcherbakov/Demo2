@@ -23,7 +23,7 @@
 #include "glElements.h"
 #include "clElements.h"
 
-#define BENCHMARK_MOD1
+#define BENCHMARK_MOD
 #define BENCHMARK_SCREEN_OUT1
 
 #ifdef BENCHMARK_MOD
