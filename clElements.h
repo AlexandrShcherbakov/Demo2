@@ -1,15 +1,15 @@
 #ifndef DEMO2_CLELEMENTS
 #define DEMO2_CLELEMENTS
 
-#include <stdio.h>
 
-#include "SDL/SDL.h"
+#include <stdio.h>
 #include "types.h"
 #include "parameters.h"
 
 #include "CL/clew.h"
-
 #include "CL/cl_gl.h"
+
+#include "SDL/SDL.h"
 
 //Constants
 ///////////////////////////////////////////////////////

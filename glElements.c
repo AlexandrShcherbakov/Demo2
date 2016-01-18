@@ -93,7 +93,7 @@ int LoadSource(char * shaderName, char **textOut, int *textLen) {
 	*textOut = calloc(sizeof(*textOut), *textLen + 1);
 
 	*textLen = fread(*textOut, sizeof(**textOut), *textLen, input);
-	close(input);
+	fclose(input);
 	return 1;
 }
 
@@ -145,7 +145,7 @@ void LoadGLFunctions() {
 //Fill perspective matrix 4x4
 void Matrix4Perspective(float *M, float fovy, float aspect, float znear, float zfar) {
 	//Convert fovy from graduses to radians
-	float f = 1 / tanf(fovy * M_PI / 360),
+  float f = 1 / tanf(fovy * 3.1415926535f / 360.0f),
 			A = (zfar + znear) / (znear - zfar),
 			B = (2 * zfar * znear) / (znear - zfar);
 

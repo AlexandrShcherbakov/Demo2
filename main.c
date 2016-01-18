@@ -1,20 +1,9 @@
-#include "SDL/SDL.h"
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <time.h>
 
-//#include "../GL/glew.h"
-#include <GL/gl.h>
-#include <GL/glu.h>
-
-#ifdef _WIN32
-#include <windows.h>
-#include "GL/wglext.h"
-#endif
-#include "GL/glext.h"
-
 #include "CL/clew.h"
-
 #include "CL/cl_gl.h"
 
 //Include my libraries
@@ -22,6 +11,8 @@
 #include "parameters.h"
 #include "glElements.h"
 #include "clElements.h"
+
+#include "SDL/SDL.h"
 
 #define BENCHMARK_MOD
 #define BENCHMARK_SCREEN_OUT1
@@ -43,6 +34,23 @@
 #endif
 
 #define GR_SIZE 256
+
+void GenerateHammersleyForLightCount() {
+
+  for (int i = 0; i < LIGHT_COUNT_ITERATIONS; ++i) {
+    float u = 0;
+    int kk = i;
+
+    for (float p = 0.5; kk; p *= 0.5, kk >>= 1)
+      if (kk & 1)
+        u += p;
+
+    float v = (i + 0.5) / LIGHT_COUNT_ITERATIONS;
+    hammersleyDist[i].s[0] = u;
+    hammersleyDist[i].s[1] = v;
+  }
+
+}
 
 
 void ReadCornellBox() {
@@ -471,7 +479,7 @@ void FillCLBuffers() {
     CHECK_CL(clEnqueueWriteBuffer(clProg, intCLFormFactor, CL_TRUE, 0, sizeof(*formFactors) * patchCount * patchCount, formFactors, 0, NULL, NULL));
 
     //Fill indices
-    int indices[patchCount];
+    int* indices = (int*)malloc(patchCount*sizeof(int));
     for (int i = 0; i < polygonCount; ++i) {
         for (int j = 0; j < PATCH_COUNT * PATCH_COUNT; ++j) {
             indices[i * PATCH_COUNT * PATCH_COUNT + j] = i;
@@ -480,7 +488,8 @@ void FillCLBuffers() {
     CHECK_CL(clEnqueueWriteBuffer(clProg, intCLIndices, CL_TRUE, 0, sizeof(*indices) * patchCount, indices, 0, NULL, NULL));
 
     //Fill material reflectance
-    vec4 refl[polygonCount];
+    //vec4 refl[polygonCount];
+    vec4* refl = (vec4*)malloc(polygonCount*sizeof(vec4));
     for (int i = 0; i < polygonCount; ++i) {
         refl[i] = scene[i].mat.ambient;
         refl[i].w = 0;
@@ -493,6 +502,9 @@ void FillCLBuffers() {
     //Fill half form-factors and reflectance on GPU
     CHECK_CL(clEnqueueNDRangeKernel(clProg, convertROFloatToHalf, 1, 0, &patchCount, NULL, 0, NULL, NULL));
 	CHECK_CL(clFinish(clProg));
+
+  free(indices); indices = 0;
+  free(refl);    refl = 0;
 }
 
 void PrepareOpenCL() {
@@ -875,21 +887,6 @@ void ComputeRadiosityOptimizeV6() {
 	CHECK_CL(clEnqueueReleaseGLObjects(clProg, 1, &halfCLIncident, 0, 0, 0));
 }
 
-
-void GenerateHammersleyForLightCount() {
-    for (int i = 0; i < LIGHT_COUNT_ITERATIONS; ++i) {
-        float u = 0;
-        int kk = i;
-
-        for (float p = 0.5; kk; p *= 0.5, kk >>= 1)
-            if (kk & 1)
-                u += p;
-
-        float v = (i + 0.5) / LIGHT_COUNT_ITERATIONS;
-        hammersleyDist[i].s[0] = u;
-        hammersleyDist[i].s[1] = v;
-	}
-}
 
 
 float computeFormFactorForPatches(patch p1, patch p2, int pl1, int pl2) {

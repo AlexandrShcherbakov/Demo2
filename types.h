@@ -11,17 +11,17 @@
 typedef unsigned uint;
 
 ///Type for representation of point in 3D space
-    typedef struct vec3 {
+    typedef struct vec3T {
         float x, y, z;
     } vec3;
 
 ///Type for representation of point in 4D space
-    typedef struct vec4 {
+    typedef struct vec4T {
         float x, y, z, w;
     } vec4;
 
 ///Type for material
-    typedef struct Material {
+    typedef struct MaterialT {
         vec4 ambient;
         vec4 diffuse;
         vec4 specular;
@@ -30,7 +30,7 @@ typedef unsigned uint;
 
 
 ///Type for representation of polygon in 3D space
-    typedef struct polygon {
+    typedef struct polygonT {
         vec3 * vertices;
         vec3 normal;
         int length;

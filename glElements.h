@@ -1,18 +1,14 @@
 #ifndef DEMO2_GLELEMENTS
 #define DEMO2_GLELEMENTS
 
+
 #include <stdio.h>
 
-#include "SDL/SDL.h"
 #include "types.h"
-#include <GL/gl.h>
-#include <GL/glu.h>
-
-#ifdef _WIN32
+//#include "SDL/SDL.h"
 #include <windows.h>
-#include "GL/wglext.h"
-#endif
-#include "GL/glext.h"
+#include <GL/gl.h>
+#include <GL/glext.h>
 
 //Constants
 ///////////////////////////////////////////////////////

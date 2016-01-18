@@ -55,19 +55,19 @@ polygon readPolygon(FILE *fl) {
 }
 
 
-inline vec3 sub(vec3 p1, vec3 p2) {
+vec3 sub(vec3 p1, vec3 p2) {
     vec3 res = {p1.x - p2.x, p1.y - p2.y, p1.z - p2.z};
     return res;
 }
 
 
-inline vec3 mult(vec3 p, float k) {
+vec3 mult(vec3 p, float k) {
     vec3 res = {p.x * k, p.y * k, p.z * k};
     return res;
 }
 
 
-inline vec3 sum(vec3 p1, vec3 p2) {
+vec3 sum(vec3 p1, vec3 p2) {
     vec3 res = {p1.x + p2.x, p1.y + p2.y, p1.z + p2.z};
     return res;
 }
@@ -91,7 +91,7 @@ vec3 multV(vec3 p1, vec3 p2) {
 }
 
 
-inline float length(vec3 p) {
+float length(vec3 p) {
 	return sqrt(p.x * p.x + p.y * p.y + p.z * p.z);
 }
 

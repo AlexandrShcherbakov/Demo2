@@ -79,14 +79,14 @@
  *  \endcode
  */
 
-#if defined(SDL_MAIN_NEEDED) || defined(SDL_MAIN_AVAILABLE)
-#define main    SDL_main
-#endif
+//#if defined(SDL_MAIN_NEEDED) || defined(SDL_MAIN_AVAILABLE)
+//#define main    SDL_main
+//#endif
 
 /**
  *  The prototype for the application's main() function
  */
-extern C_LINKAGE int SDL_main(int argc, char *argv[]);
+//extern C_LINKAGE int SDL_main(int argc, char *argv[]);
 
 
 #include "begin_code.h"

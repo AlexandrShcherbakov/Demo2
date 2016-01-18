@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.40629.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vs_radiosity", "vs_radiosity.vcxproj", "{78EAE31B-D6E2-41D9-B7A5-1A018BC30484}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "clew", "clew\clew.vcxproj", "{564B8338-F1D9-4D33-953B-C6F797D083A5}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{78EAE31B-D6E2-41D9-B7A5-1A018BC30484}.Debug|Win32.ActiveCfg = Debug|Win32
+		{78EAE31B-D6E2-41D9-B7A5-1A018BC30484}.Debug|Win32.Build.0 = Debug|Win32
+		{78EAE31B-D6E2-41D9-B7A5-1A018BC30484}.Release|Win32.ActiveCfg = Release|Win32
+		{78EAE31B-D6E2-41D9-B7A5-1A018BC30484}.Release|Win32.Build.0 = Release|Win32
+		{564B8338-F1D9-4D33-953B-C6F797D083A5}.Debug|Win32.ActiveCfg = Debug|Win32
+		{564B8338-F1D9-4D33-953B-C6F797D083A5}.Debug|Win32.Build.0 = Debug|Win32
+		{564B8338-F1D9-4D33-953B-C6F797D083A5}.Release|Win32.ActiveCfg = Release|Win32
+		{564B8338-F1D9-4D33-953B-C6F797D083A5}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
