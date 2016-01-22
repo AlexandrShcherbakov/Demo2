@@ -164,6 +164,7 @@ __kernel void SendRaysV5(__global half* excident,
     }
 }
 
+
 __kernel void SendRaysV6(__global half* excident,
                        __global half* ff,
                        __global half* preincident,
@@ -195,6 +196,91 @@ __kernel void SendRaysV6(__global half* excident,
 		}
 		if (id == 0) {
 			vstore_half4(inc[0], row * newRowLen + newCol, preincident);
+		}
+		barrier(CLK_LOCAL_MEM_FENCE);
+    }
+}
+
+
+__kernel void SendRaysV7(__global half* excident,
+                       __global half* ff,
+                       __global half* preincident,
+                       const int len) {
+    int id = get_local_id(0);
+    int group = get_group_id(0);
+    __local float4 exc[GR_SIZE];
+    __local float4 inc[GR_SIZE];
+
+    exc[id] = make_float4(0, 0, 0, 0);
+    inc[id] = make_float4(0, 0, 0, 0);
+    int newRowLen = (len / GR_SIZE) + (len % GR_SIZE ? 1 : 0);
+    int oldCol = get_global_id(0);
+    int newCol = oldCol / GR_SIZE;
+    if (oldCol < len) {
+		exc[id] = vload_half4(oldCol, excident);
+	}
+    for (int row = 0; row < len; row += 4) {
+		if (oldCol < len) {
+			inc[id] = exc[id] * vload_half(oldCol + len * row, ff);
+		}
+		barrier(CLK_LOCAL_MEM_FENCE);
+
+		for (int i = GR_SIZE / 2; i > 0; i >>= 1) {
+			if (id < i) {
+				inc[id] += inc[id + i];
+			}
+			barrier(CLK_LOCAL_MEM_FENCE);
+		}
+		if (id == 0) {
+			vstore_half4(inc[0], row * newRowLen + newCol, preincident);
+		}
+		barrier(CLK_LOCAL_MEM_FENCE);
+
+		if (oldCol < len) {
+			inc[id] = exc[id] * vload_half(oldCol + len * (row + 1), ff);
+		}
+		barrier(CLK_LOCAL_MEM_FENCE);
+
+		for (int i = GR_SIZE / 2; i > 0; i >>= 1) {
+			if (id < i) {
+				inc[id] += inc[id + i];
+			}
+			barrier(CLK_LOCAL_MEM_FENCE);
+		}
+		if (id == 0) {
+			vstore_half4(inc[0], (row + 1) * newRowLen + newCol, preincident);
+		}
+		barrier(CLK_LOCAL_MEM_FENCE);
+
+		if (oldCol < len) {
+			inc[id] = exc[id] * vload_half(oldCol + len * (row + 2), ff);
+		}
+		barrier(CLK_LOCAL_MEM_FENCE);
+
+		for (int i = GR_SIZE / 2; i > 0; i >>= 1) {
+			if (id < i) {
+				inc[id] += inc[id + i];
+			}
+			barrier(CLK_LOCAL_MEM_FENCE);
+		}
+		if (id == 0) {
+			vstore_half4(inc[0], (row + 2) * newRowLen + newCol, preincident);
+		}
+		barrier(CLK_LOCAL_MEM_FENCE);
+
+		if (oldCol < len) {
+			inc[id] = exc[id] * vload_half(oldCol + len * (row + 3), ff);
+		}
+		barrier(CLK_LOCAL_MEM_FENCE);
+
+		for (int i = GR_SIZE / 2; i > 0; i >>= 1) {
+			if (id < i) {
+				inc[id] += inc[id + i];
+			}
+			barrier(CLK_LOCAL_MEM_FENCE);
+		}
+		if (id == 0) {
+			vstore_half4(inc[0], (row + 3) * newRowLen + newCol, preincident);
 		}
 		barrier(CLK_LOCAL_MEM_FENCE);
     }

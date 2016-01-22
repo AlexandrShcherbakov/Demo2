@@ -14,8 +14,8 @@
 
 #include "SDL/SDL.h"
 
-#define BENCHMARK_MOD
-#define BENCHMARK_SCREEN_OUT1
+#define BENCHMARK_MOD1
+#define BENCHMARK_SCREEN_OUT
 
 #ifdef BENCHMARK_MOD
 #define TIMER_START timer=clock();
@@ -368,6 +368,12 @@ void PrepareCLKernels(cl_program program) {
     CHECK_CL(clSetKernelArg(sendRaysV6, 1, sizeof(halfCLFormFactor), &halfCLFormFactor));
     CHECK_CL(clSetKernelArg(sendRaysV6, 2, sizeof(halfCLPreIncident), &halfCLPreIncident));
     CHECK_CL(clSetKernelArg(sendRaysV6, 3, sizeof(patchCount), &patchCount));
+
+    sendRaysV7 = clCreateKernel(program, "SendRaysV7", &cl_err);                 CHECK_CL(cl_err);
+    CHECK_CL(clSetKernelArg(sendRaysV7, 0, sizeof(halfCLExcident), &halfCLExcident));
+    CHECK_CL(clSetKernelArg(sendRaysV7, 1, sizeof(halfCLFormFactor), &halfCLFormFactor));
+    CHECK_CL(clSetKernelArg(sendRaysV7, 2, sizeof(halfCLPreIncident), &halfCLPreIncident));
+    CHECK_CL(clSetKernelArg(sendRaysV7, 3, sizeof(patchCount), &patchCount));
 
     cl_int optimSize = patchCount / OPTIMIZE_CONST;
 
@@ -868,14 +874,11 @@ void ComputeRadiosityOptimizeV6() {
     CHECK_CL(clEnqueueNDRangeKernel(clProg, sendRaysV6, 1, 0, &reduceSize, &workGroupSize, 0, NULL, NULL));
     CHECK_CL(clFinish(clProg));
     TIMER_WATCH("Compute radiosity: ")
-    printf("%d %d\n", reduceSize, patchCount);
-    reduceSize = GR_SIZE / (reduceSize / GR_SIZE);
-    int len2 = 1;
-    while (len2 < reduceSize) len2 <<= 1;
-    printf("%d\n", reduceSize);
-    reduceSize = (patchCount / len2 + (patchCount % len2 ? 1 : 0)) * GR_SIZE;
-    //reduceSize = (reduceSize / GR_SIZE + (reduceSize % GR_SIZE ? 1: 0)) * GR_SIZE;
-    printf("%d\n", reduceSize);
+    int redRowSize = reduceSize / GR_SIZE;
+    int redRowSize2 = 1; while (redRowSize2 < redRowSize) redRowSize2 <<= 1;
+    int RowsInGroup = GR_SIZE / redRowSize2;
+    int GroupCount = (patchCount / RowsInGroup + (patchCount % RowsInGroup ? 1 : 0));
+    reduceSize = GroupCount * GR_SIZE;
     CHECK_CL(clEnqueueNDRangeKernel(clProg, reduceIncidentV4, 1, 0, &reduceSize, &workGroupSize, 0, NULL, NULL));
     CHECK_CL(clFinish(clProg));
     TIMER_WATCH("Reduce incident: ")
@@ -887,6 +890,34 @@ void ComputeRadiosityOptimizeV6() {
 	CHECK_CL(clEnqueueReleaseGLObjects(clProg, 1, &halfCLIncident, 0, 0, 0));
 }
 
+
+void ComputeRadiosityOptimizeV7() {
+    CHECK_CL(clEnqueueAcquireGLObjects(clProg, 1, &halfCLIncident, 0, 0, 0));
+
+    clock_t tm = clock();
+
+	cl_event event;
+    int reduceSize = (patchCount / GR_SIZE + (patchCount % GR_SIZE ? 1: 0)) * GR_SIZE;
+    int workGroupSize = GR_SIZE;
+    TIMER_START
+    CHECK_CL(clEnqueueNDRangeKernel(clProg, sendRaysV7, 1, 0, &reduceSize, &workGroupSize, 0, NULL, NULL));
+    CHECK_CL(clFinish(clProg));
+    TIMER_WATCH("Compute radiosity: ")
+    int redRowSize = reduceSize / GR_SIZE;
+    int redRowSize2 = 1; while (redRowSize2 < redRowSize) redRowSize2 <<= 1;
+    int RowsInGroup = GR_SIZE / redRowSize2;
+    int GroupCount = (patchCount / RowsInGroup + (patchCount % RowsInGroup ? 1 : 0));
+    reduceSize = GroupCount * GR_SIZE;
+    CHECK_CL(clEnqueueNDRangeKernel(clProg, reduceIncidentV4, 1, 0, &reduceSize, &workGroupSize, 0, NULL, NULL));
+    CHECK_CL(clFinish(clProg));
+    TIMER_WATCH("Reduce incident: ")
+
+    CHECK_CL(clEnqueueNDRangeKernel(clProg, interpolation, 1, 0, &patchCount, NULL, 0, NULL, NULL));
+    CHECK_CL(clFinish(clProg));
+    TIMER_WATCH("Add interpolation: ")
+
+	CHECK_CL(clEnqueueReleaseGLObjects(clProg, 1, &halfCLIncident, 0, 0, 0));
+}
 
 
 float computeFormFactorForPatches(patch p1, patch p2, int pl1, int pl2) {
@@ -1021,7 +1052,7 @@ void DrawCornellBox(SDL_Window * window) {
 		SetStandartCamera();
 		ComputeEmission();
 		//ComputeRadiosity();
-		ComputeRadiosityOptimizeV5();
+		ComputeRadiosityOptimizeV7();
 		//actualShadowMap = true;
 
 	}
@@ -1125,6 +1156,7 @@ void FreeAllElements() {
 	CHECK_CL(clReleaseKernel(sendRaysV4));
 	CHECK_CL(clReleaseKernel(sendRaysV5));
 	CHECK_CL(clReleaseKernel(sendRaysV6));
+	CHECK_CL(clReleaseKernel(sendRaysV7));
 	CHECK_CL(clReleaseKernel(reduceIncident));
 	CHECK_CL(clReleaseKernel(reduceIncidentV2));
 	CHECK_CL(clReleaseKernel(reduceIncidentV3));
@@ -1233,7 +1265,7 @@ int main(int argc, char* argv[]) {
 	benchmark(window);
 	#endif // BENCHMARK_MOD
 
-	PATCH_COUNT = 8;
+	PATCH_COUNT = 6;
     PrepareOpenGL(window);
     PassCornellBoxDataToGL();
     ReadOrComputeFormFactors();

@@ -1,20 +1,15 @@
 # depslib dependency file v1.0
-1452844006 source:d:\dropbox\radiosity\demo2\main.c
-	"SDL/SDL.h"
+1453464759 source:d:\dropbox\radiosity\demo2\main.c
 	<stdio.h>
 	<stdbool.h>
 	<time.h>
-	<GL/gl.h>
-	<GL/glu.h>
-	<windows.h>
-	"GL/wglext.h"
-	"GL/glext.h"
 	"CL/clew.h"
 	"CL/cl_gl.h"
 	"types.h"
 	"parameters.h"
 	"glElements.h"
 	"clElements.h"
+	"SDL/SDL.h"
 
 1445942958 
 
@@ -663,18 +658,15 @@
 	"begin_code.h"
 	"close_code.h"
 
-1452351959 source:d:\dropbox\radiosity\demo2\glelements.c
+1453116202 source:d:\dropbox\radiosity\demo2\glelements.c
 	"glElements.h"
 
-1452351959 d:\dropbox\radiosity\demo2\glelements.h
+1453116202 d:\dropbox\radiosity\demo2\glelements.h
 	<stdio.h>
-	"SDL/SDL.h"
 	"types.h"
-	<GL/gl.h>
-	<GL/glu.h>
 	<windows.h>
-	"GL/wglext.h"
-	"GL/glext.h"
+	<GL/gl.h>
+	<GL/glext.h>
 
 1446373458 d:\dropbox\radiosity\gl\glext.h
 	<windows.h>
@@ -689,10 +681,10 @@
 1446373459 d:\dropbox\radiosity\gl\wglext.h
 	<windows.h>
 
-1450430255 source:d:\dropbox\radiosity\demo2\types.c
+1453116202 source:d:\dropbox\radiosity\demo2\types.c
 	"types.h"
 
-1450349768 d:\dropbox\radiosity\demo2\types.h
+1453116203 d:\dropbox\radiosity\demo2\types.h
 	<stdlib.h>
 	<math.h>
 	<float.h>
@@ -771,13 +763,13 @@
 1451237142 source:d:\dropbox\radiosity\demo2\clelements.c
 	"clElements.h"
 
-1452776576 d:\dropbox\radiosity\demo2\clelements.h
+1453464594 d:\dropbox\radiosity\demo2\clelements.h
 	<stdio.h>
-	"SDL/SDL.h"
 	"types.h"
 	"parameters.h"
 	"CL/clew.h"
 	"CL/cl_gl.h"
+	"SDL/SDL.h"
 
 1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl.h
 	"SDL_main.h"
@@ -810,7 +802,7 @@
 	"begin_code.h"
 	"close_code.h"
 
-1394253593 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_main.h
+1453116202 d:\dropbox\radiosity\demo2\external\include\sdl\sdl_main.h
 	"SDL_stdinc.h"
 	"begin_code.h"
 	"close_code.h"

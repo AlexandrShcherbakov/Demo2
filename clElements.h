@@ -81,6 +81,7 @@ cl_kernel sendRaysV3;
 cl_kernel sendRaysV4;
 cl_kernel sendRaysV5;
 cl_kernel sendRaysV6;
+cl_kernel sendRaysV7;
 cl_kernel reduceIncident;
 cl_kernel reduceIncidentV2;
 cl_kernel reduceIncidentV3;
