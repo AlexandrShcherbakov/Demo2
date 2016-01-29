@@ -40,6 +40,7 @@ vec4 gamma(vec4 v) {
     return vec4(pow(v.xyz, vec3(1.0f / 2.2f)), v.w);
 }
 
+
 void main(void)
 {
     //finalColor = (sceneColor * mat.ambient) / 10 + (lg.ambient * mat.ambient) / 10;
@@ -78,8 +79,26 @@ void main(void)
 
 	//finalColor = fragRadio;
 	if (length(lg.spotPosition - pos) < 0.01f) finalColor = vec4(1);
-	finalColor = gamma(finalColor);
-	finalColor = vec4(vec3(texture(SSAOtex, gl_FragCoord.xy / vec2(800, 600)).x / 2), 1);
+	//finalColor = vec4(vec3(texture(SSAOtex, gl_FragCoord.xy / vec2(800, 600)).x / 2), 1);
+
+	//SSAO
+	float depth = texture(SSAOtex, gl_FragCoord.xy / vec2(800, 600)).x;
+    float AO = 0.0f;
+
+	for (float x_off = -1.5f; x_off <= 1.5f; x_off += 1.0f) {
+        for (float y_off = -1.5f; y_off <= 1.5f; y_off += 1.0f) {
+			float loc_depth = texture(SSAOtex, (gl_FragCoord.xy + vec2(x_off, y_off)) / vec2(800, 600)).x;
+			AO += step(depth, loc_depth);
+        }
+    }
+
+	AO = AO / 16.0f;
+
+	finalColor = vec4(AO);
+
+	//finalColor = gamma(finalColor);
+	//finalColor = vec4(depth);
+
 	//finalColor = vec4(lightProj.z);
 	//finalColor = vec4(DecodeShadow(texture(shadowMap, gl_FragCoord.xy / vec2(800, 600))));
 	//finalColor = texture(shadowMap, gl_FragCoord.xy / vec2(800, 600));

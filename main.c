@@ -177,8 +177,8 @@ void PrepareSSAO() {
     glGenTextures(1, &SSAOtex);                                                  CHECK_GL_ERRORS
     //Create texture for shadow map
     glBindTexture(GL_TEXTURE_2D, SSAOtex);                                       CHECK_GL_ERRORS
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, SHADOWMAP_EDGE,
-				SHADOWMAP_EDGE, 0, GL_RGBA, GL_FLOAT, NULL);                     CHECK_GL_ERRORS
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, SCREEN_WIDTH,
+				SCREEN_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);                      CHECK_GL_ERRORS
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);            CHECK_GL_ERRORS
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);            CHECK_GL_ERRORS
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);         CHECK_GL_ERRORS
@@ -188,7 +188,7 @@ void PrepareSSAO() {
 
 	glGenRenderbuffers(1, &renderBuffer);                                        CHECK_GL_ERRORS
 	glBindRenderbuffer(GL_RENDERBUFFER, renderBuffer);                           CHECK_GL_ERRORS
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, SHADOWMAP_EDGE, SHADOWMAP_EDGE); CHECK_GL_ERRORS
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, SCREEN_WIDTH, SCREEN_HEIGHT); CHECK_GL_ERRORS
 	glBindFramebuffer(GL_FRAMEBUFFER, SSAOfbo);                                  CHECK_GL_ERRORS
 	glBindTexture(GL_TEXTURE_2D, SSAOtex);                                       CHECK_GL_ERRORS
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER,
@@ -755,7 +755,7 @@ void DrawSSAO() {
 	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
 							GL_TEXTURE_2D, SSAOtex, 0);                          CHECK_GL_ERRORS
 
-    glViewport(0, 0, SHADOWMAP_EDGE, SHADOWMAP_EDGE);                            CHECK_GL_ERRORS
+    glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);                               CHECK_GL_ERRORS
 	glUseProgram(SSAOProgram);                                                   CHECK_GL_ERRORS
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);                          CHECK_GL_ERRORS
 	glBindVertexArray(meshVAO);                                                  CHECK_GL_ERRORS
