@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1453464759 source:d:\dropbox\radiosity\demo2\main.c
+1454063698 source:d:\dropbox\radiosity\demo2\main.c
 	<stdio.h>
 	<stdbool.h>
 	<time.h>
@@ -661,7 +661,7 @@
 1453116202 source:d:\dropbox\radiosity\demo2\glelements.c
 	"glElements.h"
 
-1453116202 d:\dropbox\radiosity\demo2\glelements.h
+1454060907 d:\dropbox\radiosity\demo2\glelements.h
 	<stdio.h>
 	"types.h"
 	<windows.h>
@@ -690,7 +690,7 @@
 	<float.h>
 	<stdio.h>
 
-1452412220 d:\dropbox\radiosity\demo2\parameters.h
+1454061811 d:\dropbox\radiosity\demo2\parameters.h
 	"types.h"
 	<stdbool.h>
 	<time.h>

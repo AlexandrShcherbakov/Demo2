@@ -29,6 +29,7 @@ clock_t timer;
 float indirectBright;
 float directBright;
 FILE * benchmark_out;
+bool CatchMouse;
 
 //Program parameters
 enum {

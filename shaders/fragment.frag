@@ -29,6 +29,7 @@ uniform vec4 sceneColor;
 uniform LightSource lg;
 uniform vec3 viewer;
 uniform sampler2D shadowMap;
+uniform sampler2D SSAOtex;
 
 float DecodeShadow(vec4 f) {
     return f.x;
@@ -78,6 +79,7 @@ void main(void)
 	//finalColor = fragRadio;
 	if (length(lg.spotPosition - pos) < 0.01f) finalColor = vec4(1);
 	finalColor = gamma(finalColor);
+	finalColor = vec4(vec3(texture(SSAOtex, gl_FragCoord.xy / vec2(800, 600)).x / 2), 1);
 	//finalColor = vec4(lightProj.z);
 	//finalColor = vec4(DecodeShadow(texture(shadowMap, gl_FragCoord.xy / vec2(800, 600))));
 	//finalColor = texture(shadowMap, gl_FragCoord.xy / vec2(800, 600));

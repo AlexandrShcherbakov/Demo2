@@ -63,6 +63,8 @@
 		</Unit>
 		<Unit filename="parameters.h" />
 		<Unit filename="scenes/1.txt" />
+		<Unit filename="shaders/SSAO.frag" />
+		<Unit filename="shaders/SSAO.vert" />
 		<Unit filename="shaders/fragment.frag" />
 		<Unit filename="shaders/geometry.geom" />
 		<Unit filename="shaders/shadowMap.frag" />

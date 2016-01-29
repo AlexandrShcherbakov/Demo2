@@ -111,6 +111,8 @@ void ReadCornellBox() {
 
     indirectBright = 1;
     directBright = 1;
+
+    CatchMouse = false;
 }
 
 //Add buffers and other data to OpenGL
@@ -164,8 +166,46 @@ void PrepareShadowMap() {
 }
 
 
+void PrepareSSAO() {
+    //Free old resources
+    glDeleteFramebuffers(1, &SSAOfbo);                                           CHECK_GL_ERRORS
+    glDeleteTextures(1, &SSAOtex);                                               CHECK_GL_ERRORS
+
+	//Create framebuffer
+    glGenFramebuffers(1, &SSAOfbo);                                              CHECK_GL_ERRORS
+    //Create shadow map
+    glGenTextures(1, &SSAOtex);                                                  CHECK_GL_ERRORS
+    //Create texture for shadow map
+    glBindTexture(GL_TEXTURE_2D, SSAOtex);                                       CHECK_GL_ERRORS
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, SHADOWMAP_EDGE,
+				SHADOWMAP_EDGE, 0, GL_RGBA, GL_FLOAT, NULL);                     CHECK_GL_ERRORS
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);            CHECK_GL_ERRORS
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);            CHECK_GL_ERRORS
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);         CHECK_GL_ERRORS
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);         CHECK_GL_ERRORS
+
+	GLuint renderBuffer;
+
+	glGenRenderbuffers(1, &renderBuffer);                                        CHECK_GL_ERRORS
+	glBindRenderbuffer(GL_RENDERBUFFER, renderBuffer);                           CHECK_GL_ERRORS
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, SHADOWMAP_EDGE, SHADOWMAP_EDGE); CHECK_GL_ERRORS
+	glBindFramebuffer(GL_FRAMEBUFFER, SSAOfbo);                                  CHECK_GL_ERRORS
+	glBindTexture(GL_TEXTURE_2D, SSAOtex);                                       CHECK_GL_ERRORS
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER,
+                          GL_DEPTH_ATTACHMENT,
+                          GL_RENDERBUFFER,
+                          renderBuffer);                                         CHECK_GL_ERRORS
+
+	//Bind shadowmap to framebuffer
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, SSAOfbo);                             CHECK_GL_ERRORS
+	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+							GL_TEXTURE_2D, SSAOtex, 0);                          CHECK_GL_ERRORS
+}
+
+
 //Add uniforms to OpenGL
 void AddGLUniforms() {
+	glUseProgram(shaderProgram);
     //Scene color
     SetUniform4f(shaderProgram, "sceneColor", v4(0.5f, 0.5f, 0.5f, 1.0f));
 
@@ -248,7 +288,10 @@ void SetStandartCamera() {
     SetUniform3f(shaderProgram, "viewer", viewPoint);
     SetUniform3f(shaderProgram, "lg.spotPosition", spotLightPosition);
     SetUniform3f(shaderProgram, "lg.spotDirection", spotLightDirection);
-    glUseProgram(0);
+    glUseProgram(0);                                                             CHECK_GL_ERRORS
+    glUseProgram(SSAOProgram);                                                   CHECK_GL_ERRORS
+    SetUniformMat4f(SSAOProgram, "camMatrix", objectMatrix);
+    glUseProgram(0);                                                             CHECK_GL_ERRORS
 }
 
 void ChangeUniforms() {
@@ -301,6 +344,9 @@ void PrepareOpenGL(SDL_Window *window) {
         exit(1);
     }
 
+    glUseProgram(shaderProgram);                                                 CHECK_GL_ERRORS
+    glEnable(GL_DEPTH_TEST);                                                     CHECK_GL_ERRORS
+
     //Shadow Map program
     GLuint shadowVert, shadowFrag;
 
@@ -314,15 +360,23 @@ void PrepareOpenGL(SDL_Window *window) {
 
     glLinkProgram(shadowProgram);                                                CHECK_GL_ERRORS
 
-    //Choose our program to execution
-    glUseProgram(shaderProgram);                                                 CHECK_GL_ERRORS
+    //SSAO program
+    GLuint SSAOVert, SSAOFrag;
 
-    //Enable z-buffer
-    glEnable(GL_DEPTH_TEST);                                                     CHECK_GL_ERRORS
+	CompileShader("shaders/SSAO.vert", &SSAOVert, GL_VERTEX_SHADER);
+	CompileShader("shaders/SSAO.frag", &SSAOFrag, GL_FRAGMENT_SHADER);
+
+    SSAOProgram = glCreateProgram();                                             CHECK_GL_ERRORS
+
+    glAttachShader(SSAOProgram, SSAOVert);                                       CHECK_GL_ERRORS
+    glAttachShader(SSAOProgram, SSAOFrag);                                       CHECK_GL_ERRORS
+
+    glLinkProgram(SSAOProgram);                                                  CHECK_GL_ERRORS
 
     PrepareGLBuffers();
     AddGLUniforms();
     PrepareShadowMap();
+    PrepareSSAO();
 }
 
 
@@ -695,6 +749,35 @@ void PassShadowMap() {
     glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 }
 
+void DrawSSAO() {
+    //Bind SSAO to framebuffer
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, SSAOfbo);                             CHECK_GL_ERRORS
+	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+							GL_TEXTURE_2D, SSAOtex, 0);                          CHECK_GL_ERRORS
+
+    glViewport(0, 0, SHADOWMAP_EDGE, SHADOWMAP_EDGE);                            CHECK_GL_ERRORS
+	glUseProgram(SSAOProgram);                                                   CHECK_GL_ERRORS
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);                          CHECK_GL_ERRORS
+	glBindVertexArray(meshVAO);                                                  CHECK_GL_ERRORS
+	TIMER_START
+	glDrawArrays(GL_TRIANGLES, 0, 3 * (ptVerticesCount - 2));                    CHECK_GL_ERRORS
+	glFlush();
+	TIMER_WATCH("Draw SSAO: ")
+
+	GLenum Status = glCheckFramebufferStatus(GL_FRAMEBUFFER);                    CHECK_GL_ERRORS
+	if (Status != GL_FRAMEBUFFER_COMPLETE) {
+		fprintf(stderr, "FB error, status: 0x%x\n", Status);
+	}
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);                                   CHECK_GL_ERRORS
+
+	glUseProgram(shaderProgram);                                                 CHECK_GL_ERRORS
+    glActiveTexture(GL_TEXTURE1);                                                CHECK_GL_ERRORS
+    glBindTexture(GL_TEXTURE_2D, SSAOtex);                                       CHECK_GL_ERRORS
+    SetUniform1i(shaderProgram, "SSAOtex", 1);
+    glUseProgram(0);
+    glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+}
+
 void ComputeEmission() {
 	//Capture gl buffer with patches veritces
 	CHECK_CL(clEnqueueAcquireGLObjects(clProg, 1, &intCLPatchesPoints, 0, 0, 0));
@@ -1038,6 +1121,7 @@ void ReadOrComputeFormFactors() {
     }
 }
 
+
 void DrawCornellBox(SDL_Window * window) {
     //Update uniforms
     ChangeUniforms();
@@ -1054,8 +1138,8 @@ void DrawCornellBox(SDL_Window * window) {
 		//ComputeRadiosity();
 		ComputeRadiosityOptimizeV7();
 		//actualShadowMap = true;
-
 	}
+	DrawSSAO();
 	actualShadowMap = false;
 	glUseProgram(shaderProgram);                                                 CHECK_GL_ERRORS
 	//Use buffers
@@ -1072,7 +1156,7 @@ void DrawCornellBox(SDL_Window * window) {
 }
 
 
-void HandleKeyDown(SDL_Keycode code, bool *quit) {
+void HandleKeyDown(SDL_Keycode code, bool *quit, SDL_Window *window) {
     if (code == SDLK_UP) {
         spotLightPosition.z -= 0.01;
         actualShadowMap = false;
@@ -1105,16 +1189,26 @@ void HandleKeyDown(SDL_Keycode code, bool *quit) {
     	if (directBright < 0) directBright = 0;
     } else if (code == SDLK_RIGHTBRACKET) {
     	directBright += 0.2;
+    } else if (code == SDLK_q) {
+        CatchMouse = !CatchMouse;
+        if (CatchMouse) {
+			SDL_WarpMouseInWindow(window, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
+			SDL_ShowCursor(0);
+        } else {
+			SDL_ShowCursor(1);
+        }
     }
 }
 
 void MoveCameraByMouse(SDL_Window * window) {
-    int x, y;
-    int cX = SCREEN_WIDTH / 2, cY = SCREEN_HEIGHT / 2;
-    SDL_GetMouseState(&x, &y);
-    rotate.y += (float)(x - cX) / 100.0f;
-    rotate.x += (float)(y - cY) / 100.0f;
-    SDL_WarpMouseInWindow(window, cX, cY);
+	if (CatchMouse) {
+		int x, y;
+		int cX = SCREEN_WIDTH / 2, cY = SCREEN_HEIGHT / 2;
+		SDL_GetMouseState(&x, &y);
+		rotate.y += (float)(x - cX) / 100.0f;
+		rotate.x += (float)(y - cY) / 100.0f;
+		SDL_WarpMouseInWindow(window, cX, cY);
+	}
 }
 
 void FreeAllElements() {
@@ -1272,8 +1366,6 @@ int main(int argc, char* argv[]) {
     PrepareOpenCL();
 
     SDL_GL_SetSwapInterval(1);
-    SDL_WarpMouseInWindow(window, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
-    SDL_ShowCursor(0);
 
     //Main loop
     while( !quit ) {
@@ -1282,7 +1374,7 @@ int main(int argc, char* argv[]) {
             if( e.type == SDL_QUIT ) { //Check if user close window
                 quit = true;
             } else if (e.type == SDL_KEYDOWN) {
-            	HandleKeyDown(e.key.keysym.sym, &quit);
+            	HandleKeyDown(e.key.keysym.sym, &quit, window);
             }
         }
         MoveCameraByMouse(window);

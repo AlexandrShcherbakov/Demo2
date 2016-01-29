@@ -22,6 +22,7 @@ enum {
 //Shader
 GLuint shaderProgram;
 GLuint shadowProgram;
+GLuint SSAOProgram;
 
 //Vertex Array Object (VAO) for buffers
 GLuint meshVAO;
@@ -50,9 +51,11 @@ GLuint intGLRadiosity;
 
 //Shadow map
 GLuint shadowMap;
+GLuint SSAOtex;
 
 //Frame buffer object
 GLuint fbo;
+GLuint SSAOfbo;
 
 //Matrix for object
 float objectMatrix[16];
