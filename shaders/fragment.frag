@@ -30,6 +30,7 @@ uniform LightSource lg;
 uniform vec3 viewer;
 uniform sampler2D shadowMap;
 uniform sampler2D SSAOtex;
+uniform mat4 camMatrix;
 
 float DecodeShadow(vec4 f) {
     return f.x;
@@ -82,21 +83,42 @@ void main(void)
 	//finalColor = vec4(vec3(texture(SSAOtex, gl_FragCoord.xy / vec2(800, 600)).x / 2), 1);
 
 	//SSAO
-	float depth = texture(SSAOtex, gl_FragCoord.xy / vec2(800, 600)).x;
+	vec4 rndTable[8] = vec4[8] (
+		vec4 ( -0.5, -0.5, -0.5, 0.0 ),
+		vec4 (  0.5, -0.5, -0.5, 0.0 ),
+		vec4 ( -0.5,  0.5, -0.5, 0.0 ),
+		vec4 (  0.5,  0.5, -0.5, 0.0 ),
+		vec4 ( -0.5, -0.5,  0.5, 0.0 ),
+		vec4 (  0.5, -0.5,  0.5, 0.0 ),
+		vec4 ( -0.5,  0.5,  0.5, 0.0 ),
+		vec4 (  0.5,  0.5,  0.5, 0.0 )
+	);
+
+	float depth = 1.0f / texture(SSAOtex, gl_FragCoord.xy / vec2(800, 600)).x;
     float AO = 0.0f;
+    float radius = 0.2f * 40;
+    float attBias = 0.45f;
+    float attScale = 1.0f;
+    float distScale = 1.0f;
 
-	for (float x_off = -1.5f; x_off <= 1.5f; x_off += 1.0f) {
-        for (float y_off = -1.5f; y_off <= 1.5f; y_off += 1.0f) {
-			float loc_depth = texture(SSAOtex, (gl_FragCoord.xy + vec2(x_off, y_off)) / vec2(800, 600)).x;
-			AO += step(depth, loc_depth);
-        }
-    }
+	for (int i = 0; i < 8; ++i) {
+		vec3 sample = reflect(rndTable[i].xyz, normal);
+        float zSample = 1.0f / texture(SSAOtex, (gl_FragCoord.xy + radius * sample.xy / depth) / vec2(800, 600)).x;
 
-	AO = AO / 16.0f;
+        if (zSample - depth > 0.1f) continue;
 
-	finalColor = vec4(AO);
+        //float dz = max(zSample - depth, 0.0f) * 30.0f * 600;
+        float dist = max(zSample - depth, 0.0f) / distScale;
+        float occl = 15 * max(dist * (2.0f - dist), 0.0f);
 
-	//finalColor = gamma(finalColor);
+        AO += 1.0f / (1.0f + occl * occl * 600 * 600);
+	}
+
+	AO = clamp((AO / 8.0f + attBias) * attScale, 0.0f, 1.0f);
+
+	finalColor = gamma(finalColor);
+	finalColor *= vec4(AO);
+
 	//finalColor = vec4(depth);
 
 	//finalColor = vec4(lightProj.z);
