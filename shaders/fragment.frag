@@ -30,6 +30,7 @@ uniform LightSource lg;
 uniform vec3 viewer;
 uniform sampler2D shadowMap;
 uniform sampler2D SSAOtex;
+uniform sampler2D Ztex;
 uniform mat4 camMatrix;
 
 float DecodeShadow(vec4 f) {
@@ -45,7 +46,7 @@ vec4 gamma(vec4 v) {
 void main(void)
 {
     //finalColor = (sceneColor * mat.ambient) / 10 + (lg.ambient * mat.ambient) / 10;
-    finalColor = fragRadio;
+    finalColor = vec4(0);//fragRadio;
 
     vec3 lightProj = posForLight.xyz / posForLight.w / 2 + vec3(0.5f);
     //lightProj.z = posForLight.z / posForLight.w / 2 + 0.5;
@@ -78,46 +79,27 @@ void main(void)
 		}
 	}
 
-	//finalColor = fragRadio;
 	if (length(lg.spotPosition - pos) < 0.01f) finalColor = vec4(1);
-	//finalColor = vec4(vec3(texture(SSAOtex, gl_FragCoord.xy / vec2(800, 600)).x / 2), 1);
 
-	//SSAO
-	vec4 rndTable[8] = vec4[8] (
-		vec4 ( -0.5, -0.5, -0.5, 0.0 ),
-		vec4 (  0.5, -0.5, -0.5, 0.0 ),
-		vec4 ( -0.5,  0.5, -0.5, 0.0 ),
-		vec4 (  0.5,  0.5, -0.5, 0.0 ),
-		vec4 ( -0.5, -0.5,  0.5, 0.0 ),
-		vec4 (  0.5, -0.5,  0.5, 0.0 ),
-		vec4 ( -0.5,  0.5,  0.5, 0.0 ),
-		vec4 (  0.5,  0.5,  0.5, 0.0 )
-	);
+	float   h1 = 0.5;
+    float   h2 = 0.5;
+    vec4    ao = vec4(0.0);
 
-	float depth = 1.0f / texture(SSAOtex, gl_FragCoord.xy / vec2(800, 600)).x;
-    float AO = 0.0f;
-    float radius = 0.2f * 40;
-    float attBias = 0.45f;
-    float attScale = 1.0f;
-    float distScale = 1.0f;
+    /*for (int i = -1; i <= 1; i++)
+        for (int j = -1; j <= 1; j++)
+            ao += texture(SSAOtex, (gl_FragCoord.xy + vec2((2 * i + 1) * h1, (2 * j + 1) * h2)) / vec2(800, 600));
 
-	for (int i = 0; i < 8; ++i) {
-		vec3 sample = reflect(rndTable[i].xyz, normal);
-        float zSample = 1.0f / texture(SSAOtex, (gl_FragCoord.xy + radius * sample.xy / depth) / vec2(800, 600)).x;
-
-        if (zSample - depth > 0.1f) continue;
-
-        //float dz = max(zSample - depth, 0.0f) * 30.0f * 600;
-        float dist = max(zSample - depth, 0.0f) / distScale;
-        float occl = 15 * max(dist * (2.0f - dist), 0.0f);
-
-        AO += 1.0f / (1.0f + occl * occl * 600 * 600);
-	}
-
-	AO = clamp((AO / 8.0f + attBias) * attScale, 0.0f, 1.0f);
+	ao /= 9.0f;*/
+	ao = texture(SSAOtex, (gl_FragCoord.xy) / vec2(800, 600));
+	finalColor += fragRadio * ao;
+	//finalColor = ao;
 
 	finalColor = gamma(finalColor);
-	finalColor *= vec4(AO);
+
+    //gl_FragColor = texture( srcMap, gl_TexCoord [0].xy ) * pow ( ao / 9.0, vec4 ( 2.0 ) );
+
+
+	//finalColor = vec4(texture(Ztex, gl_FragCoord.xy / vec2(800, 600)));
 
 	//finalColor = vec4(depth);
 

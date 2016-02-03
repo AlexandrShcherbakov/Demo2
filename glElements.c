@@ -136,6 +136,7 @@ void LoadGLFunctions() {
 	OPENGL_GET_PROC(glDeleteBuffers_FUNC,           glDeleteBuffers);
 	OPENGL_GET_PROC(glDeleteProgram_FUNC,           glDeleteProgram);
 	OPENGL_GET_PROC(glDeleteVertexArrays_FUNC,      glDeleteVertexArrays);
+	OPENGL_GET_PROC(glDrawBuffers_FUNC,             glDrawBuffers);
 
   #ifdef _WIN32
   OPENGL_GET_PROC(glActiveTexture_FUNC,           glActiveTexture);

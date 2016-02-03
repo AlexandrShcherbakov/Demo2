@@ -158,25 +158,20 @@ void PrepareShadowMap() {
                           GL_DEPTH_ATTACHMENT,
                           GL_RENDERBUFFER,
                           renderBuffer);                                         CHECK_GL_ERRORS
-
-	//Bind shadowmap to framebuffer
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);                                 CHECK_GL_ERRORS
-	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-							GL_TEXTURE_2D, shadowMap, 0);                        CHECK_GL_ERRORS
 }
 
 
-void PrepareSSAO() {
+void PrepareZbuf() {
     //Free old resources
-    glDeleteFramebuffers(1, &SSAOfbo);                                           CHECK_GL_ERRORS
-    glDeleteTextures(1, &SSAOtex);                                               CHECK_GL_ERRORS
+    glDeleteFramebuffers(1, &getZbuffbo);                                        CHECK_GL_ERRORS
+    glDeleteTextures(1, &getZbuftex);                                            CHECK_GL_ERRORS
 
 	//Create framebuffer
-    glGenFramebuffers(1, &SSAOfbo);                                              CHECK_GL_ERRORS
+    glGenFramebuffers(1, &getZbuffbo);                                           CHECK_GL_ERRORS
     //Create shadow map
-    glGenTextures(1, &SSAOtex);                                                  CHECK_GL_ERRORS
+    glGenTextures(1, &getZbuftex);                                               CHECK_GL_ERRORS
     //Create texture for shadow map
-    glBindTexture(GL_TEXTURE_2D, SSAOtex);                                       CHECK_GL_ERRORS
+    glBindTexture(GL_TEXTURE_2D, getZbuftex);                                    CHECK_GL_ERRORS
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, SCREEN_WIDTH,
 				SCREEN_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);                      CHECK_GL_ERRORS
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);            CHECK_GL_ERRORS
@@ -189,17 +184,43 @@ void PrepareSSAO() {
 	glGenRenderbuffers(1, &renderBuffer);                                        CHECK_GL_ERRORS
 	glBindRenderbuffer(GL_RENDERBUFFER, renderBuffer);                           CHECK_GL_ERRORS
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, SCREEN_WIDTH, SCREEN_HEIGHT); CHECK_GL_ERRORS
-	glBindFramebuffer(GL_FRAMEBUFFER, SSAOfbo);                                  CHECK_GL_ERRORS
-	glBindTexture(GL_TEXTURE_2D, SSAOtex);                                       CHECK_GL_ERRORS
+	glBindFramebuffer(GL_FRAMEBUFFER, getZbuffbo);                                  CHECK_GL_ERRORS
+	glBindTexture(GL_TEXTURE_2D, getZbuftex);                                       CHECK_GL_ERRORS
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER,
                           GL_DEPTH_ATTACHMENT,
                           GL_RENDERBUFFER,
                           renderBuffer);                                         CHECK_GL_ERRORS
-
-	//Bind shadowmap to framebuffer
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, SSAOfbo);                             CHECK_GL_ERRORS
 	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+							GL_TEXTURE_2D, getZbuftex, 0);                       CHECK_GL_ERRORS
+
+	glBindTexture(GL_TEXTURE_2D, 0);                                             CHECK_GL_ERRORS
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);                                        CHECK_GL_ERRORS
+}
+
+
+void PrepareSSAO() {
+    //Free old resources
+    glDeleteFramebuffers(1, &SSAOfbo);                                           CHECK_GL_ERRORS
+    glDeleteTextures(1, &SSAOtex);                                               CHECK_GL_ERRORS
+
+	//Create framebuffer
+    glGenFramebuffers(1, &SSAOfbo);                                              CHECK_GL_ERRORS
+    glBindFramebuffer(GL_FRAMEBUFFER, SSAOfbo);                                  CHECK_GL_ERRORS
+    //Create SSAO texture
+    glGenTextures(1, &SSAOtex);                                                  CHECK_GL_ERRORS
+    glBindTexture(GL_TEXTURE_2D, SSAOtex);                                       CHECK_GL_ERRORS
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCREEN_WIDTH,
+				SCREEN_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);              CHECK_GL_ERRORS
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);            CHECK_GL_ERRORS
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);            CHECK_GL_ERRORS
+	//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);         CHECK_GL_ERRORS
+	//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);         CHECK_GL_ERRORS
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
 							GL_TEXTURE_2D, SSAOtex, 0);                          CHECK_GL_ERRORS
+
+	glBindTexture(GL_TEXTURE_2D, 0);                                             CHECK_GL_ERRORS
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);                                        CHECK_GL_ERRORS
 }
 
 
@@ -232,6 +253,9 @@ void AddGLUniforms() {
         SetUniform4fInd(shaderProgram, "maters[%d].specular", i, scene[i].mat.specular);
         SetUniform1fInd(shaderProgram, "maters[%d].shininess", i, scene[i].mat.shininess);
     }
+
+    glUseProgram(SSAOProgram);                                                   CHECK_GL_ERRORS
+    SetUniform3fv(SSAOProgram, "norm", polygonCount, normals);
 }
 
 void SetUniformsForShadowMap() {
@@ -288,6 +312,9 @@ void SetStandartCamera() {
     SetUniform3f(shaderProgram, "viewer", viewPoint);
     SetUniform3f(shaderProgram, "lg.spotPosition", spotLightPosition);
     SetUniform3f(shaderProgram, "lg.spotDirection", spotLightDirection);
+    glUseProgram(0);                                                             CHECK_GL_ERRORS
+    glUseProgram(getZbufProgram);                                                   CHECK_GL_ERRORS
+    SetUniformMat4f(getZbufProgram, "camMatrix", objectMatrix);
     glUseProgram(0);                                                             CHECK_GL_ERRORS
     glUseProgram(SSAOProgram);                                                   CHECK_GL_ERRORS
     SetUniformMat4f(SSAOProgram, "camMatrix", objectMatrix);
@@ -360,6 +387,37 @@ void PrepareOpenGL(SDL_Window *window) {
 
     glLinkProgram(shadowProgram);                                                CHECK_GL_ERRORS
 
+    if (ShaderProgramStatus(shadowProgram, GL_LINK_STATUS) != GL_TRUE) {
+        fprintf(stderr, "BUGURT!!! Line: %d\n", __LINE__);
+        exit(1);
+    }
+
+    glUseProgram(shadowProgram);                                                 CHECK_GL_ERRORS
+    glEnable(GL_DEPTH_TEST);                                                     CHECK_GL_ERRORS
+
+
+    //GetZbuf program
+    GLuint genZbufVert, genZbufFrag;
+
+	CompileShader("shaders/GetZbuf.vert", &genZbufVert, GL_VERTEX_SHADER);
+	CompileShader("shaders/GetZbuf.frag", &genZbufFrag, GL_FRAGMENT_SHADER);
+
+    getZbufProgram = glCreateProgram();                                          CHECK_GL_ERRORS
+
+    glAttachShader(getZbufProgram, genZbufVert);                                 CHECK_GL_ERRORS
+    glAttachShader(getZbufProgram, genZbufFrag);                                 CHECK_GL_ERRORS
+
+    glLinkProgram(getZbufProgram);                                               CHECK_GL_ERRORS
+
+	if (ShaderProgramStatus(getZbufProgram, GL_LINK_STATUS) != GL_TRUE) {
+        fprintf(stderr, "BUGURT!!! Line: %d\n", __LINE__);
+        exit(1);
+    }
+
+    glUseProgram(getZbufProgram);                                                CHECK_GL_ERRORS
+    glEnable(GL_DEPTH_TEST);                                                     CHECK_GL_ERRORS
+
+
     //SSAO program
     GLuint SSAOVert, SSAOFrag;
 
@@ -373,9 +431,19 @@ void PrepareOpenGL(SDL_Window *window) {
 
     glLinkProgram(SSAOProgram);                                                  CHECK_GL_ERRORS
 
+    if (ShaderProgramStatus(SSAOProgram, GL_LINK_STATUS) != GL_TRUE) {
+        fprintf(stderr, "BUGURT!!! Line: %d\n", __LINE__);
+        exit(1);
+    }
+
+    glUseProgram(SSAOProgram);                                                   CHECK_GL_ERRORS
+    glEnable(GL_DEPTH_TEST);                                                     CHECK_GL_ERRORS
+
+
     PrepareGLBuffers();
     AddGLUniforms();
     PrepareShadowMap();
+    PrepareZbuf();
     PrepareSSAO();
 }
 
@@ -749,13 +817,38 @@ void PassShadowMap() {
     glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 }
 
+void DrawZbuf() {
+    //Bind SSAO to framebuffer
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, getZbuffbo);                          CHECK_GL_ERRORS
+
+    glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);                               CHECK_GL_ERRORS
+	glUseProgram(getZbufProgram);                                                CHECK_GL_ERRORS
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);                          CHECK_GL_ERRORS
+	glBindVertexArray(meshVAO);                                                  CHECK_GL_ERRORS
+	TIMER_START
+	glDrawArrays(GL_TRIANGLES, 0, 3 * (ptVerticesCount - 2));                    CHECK_GL_ERRORS
+	glFlush();
+	TIMER_WATCH("Draw Zbuf: ")
+
+	GLenum Status = glCheckFramebufferStatus(GL_FRAMEBUFFER);                    CHECK_GL_ERRORS
+	if (Status != GL_FRAMEBUFFER_COMPLETE) {
+		fprintf(stderr, "FB error, status: 0x%x\n", Status);
+	}
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);                                   CHECK_GL_ERRORS
+
+	glUseProgram(SSAOProgram);                                                   CHECK_GL_ERRORS
+    glActiveTexture(GL_TEXTURE1);                                                CHECK_GL_ERRORS
+    glBindTexture(GL_TEXTURE_2D, getZbuftex);                                    CHECK_GL_ERRORS
+    SetUniform1i(SSAOProgram, "Ztex", 1);
+    glUseProgram(0);
+    glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+}
+
 void DrawSSAO() {
     //Bind SSAO to framebuffer
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, SSAOfbo);                             CHECK_GL_ERRORS
-	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-							GL_TEXTURE_2D, SSAOtex, 0);                          CHECK_GL_ERRORS
 
-    glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);                               CHECK_GL_ERRORS
+	glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);                               CHECK_GL_ERRORS
 	glUseProgram(SSAOProgram);                                                   CHECK_GL_ERRORS
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);                          CHECK_GL_ERRORS
 	glBindVertexArray(meshVAO);                                                  CHECK_GL_ERRORS
@@ -771,12 +864,13 @@ void DrawSSAO() {
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);                                   CHECK_GL_ERRORS
 
 	glUseProgram(shaderProgram);                                                 CHECK_GL_ERRORS
-    glActiveTexture(GL_TEXTURE1);                                                CHECK_GL_ERRORS
+    glActiveTexture(GL_TEXTURE2);                                                CHECK_GL_ERRORS
     glBindTexture(GL_TEXTURE_2D, SSAOtex);                                       CHECK_GL_ERRORS
-    SetUniform1i(shaderProgram, "SSAOtex", 1);
-    glUseProgram(0);
-    glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    SetUniform1i(shaderProgram, "SSAOtex", 2);
+    glUseProgram(0);                                                             CHECK_GL_ERRORS
+    glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);                               CHECK_GL_ERRORS
 }
+
 
 void ComputeEmission() {
 	//Capture gl buffer with patches veritces
@@ -1139,9 +1233,11 @@ void DrawCornellBox(SDL_Window * window) {
 		ComputeRadiosityOptimizeV7();
 		//actualShadowMap = true;
 	}
+	DrawZbuf();
 	DrawSSAO();
 	actualShadowMap = false;
 	glUseProgram(shaderProgram);                                                 CHECK_GL_ERRORS
+	//glUseProgram(SSAOProgram);                                                   CHECK_GL_ERRORS
 	//Use buffers
 	glBindVertexArray(meshVAO);                                                  CHECK_GL_ERRORS
 

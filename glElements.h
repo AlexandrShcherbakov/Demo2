@@ -22,6 +22,7 @@ enum {
 //Shader
 GLuint shaderProgram;
 GLuint shadowProgram;
+GLuint getZbufProgram;
 GLuint SSAOProgram;
 
 //Vertex Array Object (VAO) for buffers
@@ -51,10 +52,12 @@ GLuint intGLRadiosity;
 
 //Shadow map
 GLuint shadowMap;
+GLuint getZbuftex;
 GLuint SSAOtex;
 
 //Frame buffer object
 GLuint fbo;
+GLuint getZbuffbo;
 GLuint SSAOfbo;
 
 //Matrix for object
@@ -177,6 +180,7 @@ typedef void   (APIENTRY * glFramebufferRenderbuffer_FUNC) (GLenum, GLenum, GLen
 typedef void   (APIENTRY * glDeleteBuffers_FUNC)           (GLsizei, const GLuint *);
 typedef void   (APIENTRY * glDeleteProgram_FUNC)           (GLuint);
 typedef void   (APIENTRY * glDeleteVertexArrays_FUNC)      (GLsizei, const GLuint *);
+typedef void   (APIENTRY * glDrawBuffers_FUNC)             (GLsizei, const GLenum *);
 
 #ifdef _WIN32
 	typedef void   (APIENTRY * glActiveTexture_FUNC)           (GLenum);
@@ -221,6 +225,7 @@ glFramebufferRenderbuffer_FUNC glFramebufferRenderbuffer;
 glDeleteBuffers_FUNC           glDeleteBuffers;
 glDeleteProgram_FUNC           glDeleteProgram;
 glDeleteVertexArrays_FUNC      glDeleteVertexArrays;
+glDrawBuffers_FUNC             glDrawBuffers;
 
 #ifdef _WIN32
 	glActiveTexture_FUNC           glActiveTexture;
